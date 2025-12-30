@@ -3,7 +3,7 @@ import os
 import shutil
 from skimage.metrics import structural_similarity as ssim
 
-def filter_by_structural_similarity(input_folder, output_folder, threshold=0.95):
+def filter_by_structural_similarity(input_folder, output_folder, threshold=0.80):
     """
     Diese Funktion vergleicht Bilder und kopiert nur die 'einzigartigen' 
     in einen neuen Ordner.
@@ -42,7 +42,7 @@ def filter_by_structural_similarity(input_folder, output_folder, threshold=0.95)
 #Aufruf
 if __name__ == "__main__":
     # Pfade
-    QUELL_ORDNER = "pfad/zu/deinen/rohbildern"
-    ZIEL_ORDNER = "pfad/fuer/gefilterte_bilder"
+    QUELL_ORDNER = "/Users/lukas/Desktop/Bilder Quelle"
+    ZIEL_ORDNER = "/Users/lukas/Desktop/Bilder Ziel"
     
     filter_by_structural_similarity(QUELL_ORDNER, ZIEL_ORDNER, threshold=0.95)
