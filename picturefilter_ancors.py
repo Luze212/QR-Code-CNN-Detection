@@ -56,5 +56,12 @@ if __name__ == "__main__":
     # Pfade
     QUELL_ORDNER = "/Users/lukas/Desktop/Bilder Quelle"
     ZIEL_ORDNER = "/Users/lukas/Desktop/Bilder Ziel"
-    2
-    filter_with_anchor(QUELL_ORDNER, ZIEL_ORDNER, 6)
+    
+    filter_with_anchor(QUELL_ORDNER, ZIEL_ORDNER, threshold=35, jump_threshold=55)
+    #Einstellungen für Verwendeten QR-Code Datensatz:
+    # Mit QR-Code: threshold=28, jump_threshold=50
+    # Ergebniss: 1239 von 5046 Bildern
+    # Ohne QR-Code: threshold=35, jump_threshold=55
+    # Ergebniss: 269 von 2911 Bildern
+
+    # Bilder für Anotation gesamt: 1508
