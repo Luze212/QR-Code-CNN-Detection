@@ -47,6 +47,7 @@ def filter_by_hashing(input_folder, output_folder, max_distance=5):
     print(f"Fertig! Behalten: {kept_count} von {len(files)}")
 
 if __name__ == "__main__":
+    # Pfade
     QUELL_ORDNER = "/Users/lukas/Desktop/Bilder Quelle"
     ZIEL_ORDNER = "/Users/lukas/Desktop/Bilder Ziel"
 

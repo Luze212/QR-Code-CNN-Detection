@@ -1,1 +1,3 @@
 .venv/
+dataset_test_yolov8/
+dataset_test_boxes/
