@@ -8,8 +8,8 @@ import os
 import gc
 
 # --- KONFIGURATION ---
-BASE_DIR = 'dataset_test_boxes'  # Dataset
-OUTPUT_DIR = 'Argumentation-Tests' # Speicherordner
+BASE_DIR = 'dataset_final_boxes'  # Dataset
+OUTPUT_DIR = 'log/Argumentation-Tests' # Speicherordner
 IMG_SIZE = (300, 300)
 BATCH_SIZE = 32
 EPOCHS = 25
@@ -19,6 +19,9 @@ BEST_LR = 0.00055
 BEST_DROPOUT = 0.5
 BEST_DENSE = 320
 BEST_FILTERS = 32 # Nur Block 1 wurde genutzt
+
+# Ordner erstellen
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # --- AUGMENTATION SZENARIEN ---
 aug_scenarios = [
@@ -191,7 +194,7 @@ def main():
     print(df.to_string(index=False))
     
     # Tabelle im Zielordner speichern
-    csv_path = os.path.join(OUTPUT_DIR, 'augmentation_comparison.csv')
+    csv_path = os.path.join(OUTPUT_DIR, 'final_augmentation_comparison.csv')
     df.to_csv(csv_path, index=False)
     print(f"\nErgebnisse gespeichert in '{csv_path}'")
 

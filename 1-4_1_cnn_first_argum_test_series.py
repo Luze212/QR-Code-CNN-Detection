@@ -8,10 +8,14 @@ import os
 import gc # Garbage Collection um Speicher freizugeben
 
 # --- KONFIGURATION ---
-BASE_DIR = 'dataset_test_boxes'  # Pfad zum Dataset
+BASE_DIR = 'dataset_final_boxes'  # Pfad zum Dataset
 IMG_SIZE = (300, 300)
 BATCH_SIZE = 32
 EPOCHS = 30 
+OUTPUT_DIR = 'log/Argumentation-Tests' # Speicherordner Ergebnisse
+
+# Ordner erstellen
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # --- VERSUCH-KONFIGURATIONEN ---
 experiments = [
@@ -214,8 +218,9 @@ def main():
     print(df.to_string(index=False))
     
     # Tabelle als CSV speichern
-    df.to_csv('final_comparison_results.csv', index=False)
-    print("\nErgebnisse gespeichert in 'final_comparison_results.csv'")
+    csv_path = os.path.join(OUTPUT_DIR, 'first_comparison_results.csv')
+    df.to_csv(csv_path, index=False)
+    print("\nErgebnisse gespeichert in 'first_comparison_results.csv'")
 
 if __name__ == "__main__":
     main()

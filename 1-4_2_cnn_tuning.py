@@ -7,14 +7,16 @@ import matplotlib.pyplot as plt
 import os
 
 # --- KONFIGURATION ---
-BASE_DIR = 'dataset_test_boxes' # Dein Daten-Pfad
-TUNED_DIR = 'models/tuned'      # Zielordner für Ergebnisse
+BASE_DIR = 'dataset_final_boxes' # Dein Daten-Pfad
+TUNED_DIR = 'models'      # Zielordner für Ergebnisse
+LOG_DIR = 'log/tuned_cnn'  # Log-Ordner
 IMG_SIZE = (300, 300)
 MAX_EPOCHS_TUNING = 15          # Epochen Hyperparameter-Tuning
 MAX_EPOCHS_FINAL = 30           # Epochen finale Model
 
 # Ordner erstellen
 os.makedirs(TUNED_DIR, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
 
 # --- Daten und Argumentation ---
 def get_data():
@@ -177,7 +179,7 @@ def main():
     )
     
     # Callbacks für das finale Training
-    log_path = os.path.join(TUNED_DIR, 'best_tuned_log.csv')
+    log_path = os.path.join(LOG_DIR, 'best_tuned_log.csv')
     model_path = os.path.join(TUNED_DIR, 'best_tuned_model.keras')
     
     callbacks = [
