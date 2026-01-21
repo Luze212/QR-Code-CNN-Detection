@@ -1,19 +1,20 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models, optimizers
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ModelCheckpoint
+from tensorflow.keras import layers, models, optimizers # type: ignore
+from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
+from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ModelCheckpoint # type: ignore
 import keras_tuner as kt
 import matplotlib.pyplot as plt
 import os
 
 # --- KONFIGURATION ---
-BASE_DIR = 'dataset_final_boxes' # Dein Daten-Pfad
+BASE_DIR = 'dataset_final_boxes' # Dataset
 TUNED_DIR = 'models'      # Zielordner für Ergebnisse
-LOG_DIR = 'log/tuned_cnn'  # Log-Ordner
-IMG_SIZE = (300, 300)
+LOG_DIR = 'logs/tuned_cnn_Hyperband_2_256,256'  # Log-Ordner
+IMG_SIZE = (256, 256)
 MAX_EPOCHS_TUNING = 15          # Epochen Hyperparameter-Tuning
-MAX_EPOCHS_FINAL = 30           # Epochen finale Model
-
+MAX_EPOCHS_FINAL = 30           # Epochen finale Model´ß
+project='tuning_Hyperband_2_256,256'
+PLOT_TITEL = 'Hyperband'    # Titel für den Plot
 # Ordner erstellen
 os.makedirs(TUNED_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -98,32 +99,53 @@ class QRCodeHyperModel(kt.HyperModel):
         return model.fit(train_gen, validation_data=val_gen, *args, **kwargs)
 
 # --- Erstellung von Plots ---
-def plot_and_save_history(history, folder, filename_prefix):
-    """Erstellt Plot und speichert ihn"""
+def plot_and_save_history(history, folder, filename_prefix, title_prefix):
+    """
+    Erstellt einen Plot im standardisierten Design (identisch zu Replot_function).
+    Zeigt Accuracy (mit Bestwert) und Loss nebeneinander an.
+    """
+    # Daten aus dem History-Objekt extrahieren
     acc = history.history['accuracy']
     val_acc = history.history['val_accuracy']
     loss = history.history['loss']
     val_loss = history.history['val_loss']
-    epochs_range = range(len(acc))
+    epochs = range(len(acc))
 
-    plt.figure(figsize=(12, 5))
-    
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs_range, acc, label='Training Accuracy')
-    plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-    plt.legend(loc='lower right')
-    plt.title('Training and Validation Accuracy')
+    # Bestwert ermitteln für den Titel
+    best_val_acc = max(val_acc)
 
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs_range, loss, label='Training Loss')
-    plt.plot(epochs_range, val_loss, label='Validation Loss')
-    plt.legend(loc='upper right')
-    plt.title('Training and Validation Loss')
+    # Plot erstellen (Gleiche Größe wie dein Referenz-Plot)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     
+    # --- Linke Seite: Accuracy ---
+    ax1.plot(epochs, acc, label='Training Accuracy', linewidth=2)
+    ax1.plot(epochs, val_acc, label='Validation Accuracy', linewidth=2)
+    # Titel mit Bestwert-Anzeige
+    ax1.set_title(f'{title_prefix}: Accuracy (Best: {best_val_acc:.2%})', fontsize=14)
+    ax1.set_xlabel('Epochen')
+    ax1.set_ylabel('Accuracy')
+    ax1.legend(loc='lower right')
+    ax1.grid(True, which='both', linestyle='--', alpha=0.7)
+    
+    # --- Rechte Seite: Loss ---
+    # Hier nutzen wir Rot/Orange für bessere Unterscheidung
+    ax2.plot(epochs, loss, label='Training Loss', linewidth=2, color='red')
+    ax2.plot(epochs, val_loss, label='Validation Loss', linewidth=2, color='orange')
+    ax2.set_title(f'{title_prefix}: Loss', fontsize=14)
+    ax2.set_xlabel('Epochen')
+    ax2.set_ylabel('Loss')
+    ax2.legend(loc='upper right')
+    ax2.grid(True, which='both', linestyle='--', alpha=0.7)
+    
+    # Layout straffen und speichern
+    plt.tight_layout()
+    
+    # Pfad zusammenbauen
     plot_path = os.path.join(folder, f'{filename_prefix}_plot.png')
-    plt.savefig(plot_path)
+    
+    # Speichern mit hoher Auflösung (300 DPI)
+    plt.savefig(plot_path, dpi=300)
     plt.close()
-    print(f"Grafik gespeichert: {plot_path}")
 
 # --- Haupt-Ausführungslogik ---
 def main():
@@ -134,12 +156,12 @@ def main():
         max_epochs=MAX_EPOCHS_TUNING,
         factor=3,
         directory='tuning_results',
-        project_name='qr_tuning_final'
+        project_name=project
     )
     
     early_stop = EarlyStopping(monitor='val_loss', patience=4)
     
-    print("🚀 PHASE 1: Suche nach besten Hyperparametern...")
+    print("PHASE 1: Suche nach besten Hyperparametern...")
     tuner.search(callbacks=[early_stop])
     
     # 2. Beste Parameter 
@@ -147,7 +169,7 @@ def main():
     best_batch_size = best_hps.get('batch_size')
     
     # Parameter in Textdatei speichern
-    params_path = os.path.join(TUNED_DIR, 'best_hyperparameters.txt')
+    params_path = os.path.join(LOG_DIR, 'best_hyperparameters.txt')
     with open(params_path, 'w') as f:
         f.write("BESTE HYPERPARAMETER:\n")
         f.write("=====================\n")
@@ -156,7 +178,7 @@ def main():
     print(f"Parameter-Log gespeichert: {params_path}")
 
     # 3. Finales Training mit besten Parametern
-    print("\n PHASE 2: Finales Training mit Besten Parametern...")
+    print("\nPHASE 2: Finales Training mit Besten Parametern...")
     
     # Modell bauen
     model = tuner.hypermodel.build(best_hps)
@@ -180,7 +202,7 @@ def main():
     
     # Callbacks für das finale Training
     log_path = os.path.join(LOG_DIR, 'best_tuned_log.csv')
-    model_path = os.path.join(TUNED_DIR, 'best_tuned_model.keras')
+    model_path = os.path.join(TUNED_DIR, 'best_tuned_model_Hyperband.keras')
     
     callbacks = [
         CSVLogger(log_path, append=False),
@@ -197,9 +219,9 @@ def main():
     )
     
     # 4. Plotten
-    plot_and_save_history(history, TUNED_DIR, 'best_tuned')
+    plot_and_save_history(history, LOG_DIR, 'best_tuned_plot.png', PLOT_TITEL)
     
-    print("\n✅ FERTIG! Alle Dateien liegen in models/tuned/:")
+    print("\nFERTIG! Alle Dateien liegen in models/tuned/:")
     print(f"- Modell: {model_path}")
     print(f"- Log (CSV): {log_path}")
     print(f"- Plot (PNG): best_tuned_plot.png")

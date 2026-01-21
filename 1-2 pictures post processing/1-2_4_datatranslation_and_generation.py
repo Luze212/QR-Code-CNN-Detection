@@ -7,8 +7,8 @@ from pathlib import Path
 from tqdm import tqdm
 
 # --- KONFIGURATION ---
-SOURCE_DIR = "../dataset_final_yolov8"  # Dataset (Yolov8 - als Polygone gelabelt)
-TARGET_DIR = "../dataset_final_boxes" # Ziet-Dataset (Box-Format für CNN)
+SOURCE_DIR = "./dataset_final_yolov8"  # Dataset (Yolov8 - als Polygone gelabelt)
+TARGET_DIR = "./dataset_final_boxes" # Ziet-Dataset (Box-Format für CNN)
 IMG_SIZE = 300 
 TEST_SPLIT = 0.2
 SEED = 42

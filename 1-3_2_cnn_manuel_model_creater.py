@@ -1,7 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models, optimizers
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
+from tensorflow.keras import layers, models, optimizers # type: ignore
+from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping # type: ignore
 import matplotlib.pyplot as plt
 import os
 import time 

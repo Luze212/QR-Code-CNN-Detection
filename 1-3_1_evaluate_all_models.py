@@ -1,7 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
+from tensorflow.keras.models import load_model # type: ignore
+from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score # type: ignore
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -11,7 +11,7 @@ import shutil
 
 # --- KONFIGURATION ---
 BASE_DATA_DIR = 'dataset_final_boxes' # Dataset
-MODELS_DIR = 'models'
+MODELS_DIR = 'models' # für models und models_tfl anwendbar
 LOGS_BASE_DIR = 'logs'
 
 def get_test_generator(input_shape):

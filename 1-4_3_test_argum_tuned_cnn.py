@@ -1,7 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models, optimizers
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import CSVLogger, EarlyStopping
+from tensorflow.keras import layers, models, optimizers # type: ignore
+from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
+from tensorflow.keras.callbacks import CSVLogger, EarlyStopping # type: ignore
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
@@ -9,8 +9,8 @@ import gc
 
 # --- KONFIGURATION ---
 BASE_DIR = 'dataset_final_boxes'  # Dataset
-OUTPUT_DIR = 'log/Argumentation-Tests' # Speicherordner
-IMG_SIZE = (300, 300)
+OUTPUT_DIR = 'logs/Argumentation-Tests' # Speicherordner
+IMG_SIZE = (256, 256)
 BATCH_SIZE = 32
 EPOCHS = 25
 
@@ -109,15 +109,63 @@ def build_best_model():
     model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     return model
 
+def plot_and_save_history(history, folder, filename_prefix, title_prefix):
+    """
+    Erstellt einen Plot im standardisierten Design (identisch zu Replot_function).
+    Zeigt Accuracy (mit Bestwert) und Loss nebeneinander an.
+    """
+    # Daten aus dem History-Objekt extrahieren
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+    epochs = range(len(acc))
+
+    # Bestwert ermitteln für den Titel
+    best_val_acc = max(val_acc)
+
+    # Plot erstellen (Gleiche Größe wie dein Referenz-Plot)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    
+    # --- Linke Seite: Accuracy ---
+    ax1.plot(epochs, acc, label='Training Accuracy', linewidth=2)
+    ax1.plot(epochs, val_acc, label='Validation Accuracy', linewidth=2)
+    # Titel mit Bestwert-Anzeige
+    ax1.set_title(f'{title_prefix}: Accuracy (Best: {best_val_acc:.2%})', fontsize=14)
+    ax1.set_xlabel('Epochen')
+    ax1.set_ylabel('Accuracy')
+    ax1.legend(loc='lower right')
+    ax1.grid(True, which='both', linestyle='--', alpha=0.7)
+    
+    # --- Rechte Seite: Loss ---
+    # Hier nutzen wir Rot/Orange für bessere Unterscheidung
+    ax2.plot(epochs, loss, label='Training Loss', linewidth=2, color='red')
+    ax2.plot(epochs, val_loss, label='Validation Loss', linewidth=2, color='orange')
+    ax2.set_title(f'{title_prefix}: Loss', fontsize=14)
+    ax2.set_xlabel('Epochen')
+    ax2.set_ylabel('Loss')
+    ax2.legend(loc='upper right')
+    ax2.grid(True, which='both', linestyle='--', alpha=0.7)
+    
+    # Layout straffen und speichern
+    plt.tight_layout()
+    
+    # Pfad zusammenbauen
+    plot_path = os.path.join(folder, f'{filename_prefix}_plot.png')
+    
+    # Speichern mit hoher Auflösung (300 DPI)
+    plt.savefig(plot_path, dpi=300)
+    plt.close()
+
 # --- Haupt-Ausführungslogik ---
 def main():
     # Zielordner erstellen
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     results = []
 
-    print(f"🚀 Starte Augmentation-Testreihe mit {len(aug_scenarios)} Szenarien...")
-    print(f"📂 Datenquelle: {BASE_DIR}")
-    print(f"💾 Speicherort: {OUTPUT_DIR}")
+    print(f"Starte Augmentation-Testreihe mit {len(aug_scenarios)} Szenarien...")
+    print(f"Datenquelle: {BASE_DIR}")
+    print(f"Speicherort: {OUTPUT_DIR}")
 
     for scenario in aug_scenarios:
         name = scenario['name']
@@ -171,16 +219,9 @@ def main():
             'Epochen': len(history.history['accuracy'])
         })
         
-        # Plot erstellen und im Zielordner speichern
-        plt.figure(figsize=(10, 4))
-        plt.plot(history.history['val_accuracy'], label='Val Acc')
-        plt.plot(history.history['accuracy'], label='Train Acc')
-        plt.title(f'Verlauf: {name}')
-        plt.legend()
-        
+        # Plotten
         plot_path = os.path.join(OUTPUT_DIR, f'{name}.png')
-        plt.savefig(plot_path)
-        plt.close()
+        plot_and_save_history(history, plot_path, f'{name}_tuned_plot.png', name)
         
         del model
         gc.collect()

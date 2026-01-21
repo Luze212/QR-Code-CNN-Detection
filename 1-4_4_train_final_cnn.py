@@ -1,7 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models, optimizers
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
+from tensorflow.keras import layers, models, optimizers # type: ignore
+from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping # type: ignore
 import matplotlib.pyplot as plt
 import os
 
@@ -16,7 +16,7 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
 
 # --- FINALE HYPERPARAMETER ---
-PARAM_IMG_SIZE = (300, 300) # Hohe auflösung für bessere Erkennung
+PARAM_IMG_SIZE = (256, 256) # Hohe auflösung für bessere Erkennung
 PARAM_FILTERS = 32          # Nur 1 Block mit 32 Filtern (Tuning Ergebnis)
 PARAM_DENSE = 320           # 320 Neuronen im Dense Layer
 PARAM_DROPOUT = 0.5         # 50% Dropout
@@ -96,28 +96,54 @@ def build_final_model():
     return model
 
 # --- Plot-Funktion ---
-def plot_results(history, save_path):
+def plot_and_save_history(history, folder, filename_prefix, title_prefix):
+    """
+    Erstellt einen Plot im standardisierten Design (identisch zu Replot_function).
+    Zeigt Accuracy (mit Bestwert) und Loss nebeneinander an.
+    """
+    # Daten aus dem History-Objekt extrahieren
     acc = history.history['accuracy']
     val_acc = history.history['val_accuracy']
     loss = history.history['loss']
     val_loss = history.history['val_loss']
     epochs = range(len(acc))
 
-    plt.figure(figsize=(12, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs, acc, label='Training')
-    plt.plot(epochs, val_acc, label='Validation')
-    plt.title('Accuracy: Final Optimized CNN')
-    plt.legend()
+    # Bestwert ermitteln für den Titel
+    best_val_acc = max(val_acc)
 
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs, loss, label='Training')
-    plt.plot(epochs, val_loss, label='Validation')
-    plt.title('Loss: Final Optimized CNN')
-    plt.legend()
+    # Plot erstellen (Gleiche Größe wie dein Referenz-Plot)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     
-    plt.savefig(save_path)
+    # --- Linke Seite: Accuracy ---
+    ax1.plot(epochs, acc, label='Training Accuracy', linewidth=2)
+    ax1.plot(epochs, val_acc, label='Validation Accuracy', linewidth=2)
+    # Titel mit Bestwert-Anzeige
+    ax1.set_title(f'{title_prefix}: Accuracy (Best: {best_val_acc:.2%})', fontsize=14)
+    ax1.set_xlabel('Epochen')
+    ax1.set_ylabel('Accuracy')
+    ax1.legend(loc='lower right')
+    ax1.grid(True, which='both', linestyle='--', alpha=0.7)
+    
+    # --- Rechte Seite: Loss ---
+    # Hier nutzen wir Rot/Orange für bessere Unterscheidung
+    ax2.plot(epochs, loss, label='Training Loss', linewidth=2, color='red')
+    ax2.plot(epochs, val_loss, label='Validation Loss', linewidth=2, color='orange')
+    ax2.set_title(f'{title_prefix}: Loss', fontsize=14)
+    ax2.set_xlabel('Epochen')
+    ax2.set_ylabel('Loss')
+    ax2.legend(loc='upper right')
+    ax2.grid(True, which='both', linestyle='--', alpha=0.7)
+    
+    # Layout straffen und speichern
+    plt.tight_layout()
+    
+    # Pfad zusammenbauen
+    plot_path = os.path.join(folder, f'{filename_prefix}_plot.png')
+    
+    # Speichern mit hoher Auflösung (300 DPI)
+    plt.savefig(plot_path, dpi=300)
     plt.close()
+
 
 # --- Haupt-Ausführungslogik ---
 def main():
@@ -157,7 +183,7 @@ def main():
     
     # 5. Abschluss & Plot
     plot_path = os.path.join(LOGS_DIR, 'final_optimized_plot.png')
-    plot_results(history, plot_path)
+    plot_and_save_history(history, plot_path, 'final_optimized_plot.png', 'Final Optimized CNN')
     
     val_acc = max(history.history['val_accuracy'])
     print("\nTRAINING ABGESCHLOSSEN")

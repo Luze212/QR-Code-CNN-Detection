@@ -1,3 +1,7 @@
 .venv/
 dataset_test_yolov8/
 dataset_test_boxes/
+dataset_final_yolov8/
+dataset_final_boxes/
+models/
+tuning_results/
