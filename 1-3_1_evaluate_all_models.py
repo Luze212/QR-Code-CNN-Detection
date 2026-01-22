@@ -27,9 +27,8 @@ def get_test_generator(input_shape):
         batch_size=32,
         class_mode='binary',
         shuffle=False,
-        verbose=0
     )
-    return gen
+    return
 
 def plot_confusion_matrix(cm, model_name, save_dir):
     """Zeichnet und speichert die Confusion Matrix"""

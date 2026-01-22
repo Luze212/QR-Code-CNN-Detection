@@ -1,0 +1,19 @@
+BESTE HYPERPARAMETER:
+=====================
+num_conv_blocks: 1
+activation: elu
+filters_0: 32
+use_batch_norm: True
+dense_units: 320
+dropout: 0.4
+learning_rate: 0.0018156534289753442
+optimizer: sgd
+loss_fn: binary_crossentropy
+filters_1: 32
+batch_size: 64
+tuner/epochs: 15
+tuner/initial_epoch: 5
+tuner/bracket: 2
+tuner/round: 2
+tuner/trial_id: 0013
+filters_2: 32

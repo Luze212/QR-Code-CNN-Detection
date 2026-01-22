@@ -9,17 +9,17 @@ import os
 # --- KONFIGURATION ---
 BASE_DIR = 'dataset_final_boxes' 
 TUNED_DIR = 'models'      
-LOG_DIR = 'logs/tuned_cnn_Bayesian_2_200,200' 
+LOG_DIR = 'logs/tuned_cnn_Bayesian_2_300,300' 
 
 # WICHTIG: Wir nutzen die Sieger-Auflösung
-IMG_SIZE = (200, 200)
+IMG_SIZE = (300, 300)
 
 # Tuning Einstellungen
 MAX_TRIALS = 20           # 20 gezielte Versuche (Bayesian ist langsam aber schlau)
 EXECUTION_PER_TRIAL = 1   # Jeden Versuch 1x durchführen
 EPOCHS_TUNING = 20        # Genug Zeit geben
 EPOCHS_FINAL = 35         # Finales Training länger
-project='tuning_Bayesian_2_200,200'    # Projektname für tuning_results
+project='tuning_Bayesian_2_300,300'    # Projektname für tuning_results
 PLOT_TITEL = 'Bayesian'    # Titel für den Plot
 
 # Ordner erstellen
