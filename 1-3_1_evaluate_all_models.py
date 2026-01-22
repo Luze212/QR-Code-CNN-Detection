@@ -28,7 +28,7 @@ def get_test_generator(input_shape):
         class_mode='binary',
         shuffle=False,
     )
-    return
+    return gen
 
 def plot_confusion_matrix(cm, model_name, save_dir):
     """Zeichnet und speichert die Confusion Matrix"""
@@ -65,7 +65,7 @@ def main():
             return
             
     os.makedirs(save_dir)
-    print(f"\n📂 Ergebnisse werden gespeichert in: {save_dir}")
+    print(f"\nErgebnisse werden gespeichert in: {save_dir}")
 
     # Modelle finden
     model_files = [f for f in os.listdir(MODELS_DIR) if f.endswith('.keras') or f.endswith('.h5')]
@@ -147,13 +147,40 @@ def main():
         print(f"\nTabelle gespeichert: {csv_path}")
         
         # Balkendiagramm erstellen
-        plt.figure(figsize=(10, 6))
-        sns.barplot(x='Accuracy', y='Modell', data=df, palette='viridis')
-        plt.title('Modell Vergleich (Accuracy)')
-        plt.xlim(0, 1.0)
+        # Balkendiagramm erstellen (Optimiertes Design)
+        plt.figure(figsize=(14, 6))
+        
+        # Barplot zeichnen
+        barplot = sns.barplot(x='Accuracy', y='Modell', data=df, palette='viridis', hue='Modell', legend=False)
+        
+        # Titel und Achsen anpassen
+        plt.title('Modell Vergleich: Accuracy Ranking', fontsize=14)
+        plt.xlabel('Accuracy', fontsize=12)
+        plt.ylabel('Modell', fontsize=12)
+        plt.xlim(0, 1.05) # Etwas Platz rechts lassen für die Zahlen
+        
+        # Vertikales Gitter für bessere Lesbarkeit
+        plt.grid(True, axis='x', linestyle='--', alpha=0.7)
+        
+        # Die genauen Werte direkt an die Balken schreiben
+        for p in barplot.patches:
+            width = p.get_width()
+            plt.text(
+                width + 0.01,       # X-Position (etwas rechts vom Balkenende)
+                p.get_y() + p.get_height() / 2, # Y-Position (Mitte des Balkens)
+                f'{width:.2%}',     # Text (z.B. "88.35%")
+                ha='left',          # Horizontale Ausrichtung
+                va='center',        # Vertikale Ausrichtung
+                fontsize=11,
+                fontweight='bold',
+                color='black'
+            )
+            
         plt.tight_layout()
-        plt.savefig(os.path.join(save_dir, 'ranking_plot.png'))
-        print(f"Ranking-Plot gespeichert.")
+        plot_path = os.path.join(save_dir, 'ranking_plot.png')
+        plt.savefig(plot_path, dpi=300)
+        plt.close()
+        print(f"Ranking-Plot gespeichert: {plot_path}")
         
     else:
         print("Keine Ergebnisse gesammelt.")
