@@ -1,6 +1,7 @@
 Modell,Accuracy,F1-Score,True Pos (QR gefunden),False Pos (Fehlalarm),True Neg (Korrekt ignoriert),False Neg (QR übersehen),Input Size
 "best_tuned_model_Bayesian_1_256,256",0.8835,0.9321,247,33,26,3,"(256, 256)"
 "best_tuned_model_Bayesian_2_200,200",0.8706,0.9231,240,30,29,10,"(200, 200)"
+best_tuned_model_Bayesian,0.8608,0.919,244,37,22,6,"(300, 300)"
 "best_tuned_model_Hyperband_2_256,256",0.8317,0.9023,240,42,17,10,"(256, 256)"
 argum_test_1_Baseline,0.8252,0.9011,246,50,9,4,"(256, 256)"
 argum_test_3_Small_Network,0.822,0.9005,249,54,5,1,"(256, 256)"
