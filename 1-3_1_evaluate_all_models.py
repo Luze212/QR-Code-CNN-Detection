@@ -3,6 +3,7 @@ from tensorflow.keras.models import load_model # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score # type: ignore
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches 
 import seaborn as sns
 import pandas as pd
 import numpy as np
@@ -43,6 +44,51 @@ def plot_confusion_matrix(cm, model_name, save_dir):
     plt.savefig(path)
     plt.close()
 
+def plot_prediction_distribution(df, save_dir, threshold):
+    """
+    Erstellt einen Violin-Plot, der die Verteilung der Vorhersagewahrscheinlichkeiten 
+    für jedes Modell zeigt, getrennt nach der wahren Klasse.
+    """
+    plt.figure(figsize=(14, 8))
+    
+    # Farben definieren (Blau für No QR, Orange für QR)
+    my_palette = {0: "skyblue", 1: "orange"}
+    
+    # Violinplot
+    sns.violinplot(data=df, x='Modell', y='Probability', hue='True Label', 
+                   split=True, inner="quart", palette=my_palette, cut=0, linewidth=1.2)
+    
+    plt.title('Detail-Analyse: Verteilung der Vorhersage-Sicherheit (Split by Class)', fontsize=14)
+    plt.xlabel('Modell', fontsize=12)
+    plt.ylabel('Vorhersagewahrscheinlichkeit (0.0 = No QR, 1.0 = QR)', fontsize=12)
+    
+    # Hilfslinie für den gewählten Schwellenwert
+    plt.axhline(y=threshold, color='red', linestyle='--', alpha=0.6, label=f'Threshold {threshold}')
+    
+    # Y-Achse begrenzen (leicht gepolstert)
+    plt.ylim(-0.05, 1.05) 
+    plt.grid(True, axis='y', linestyle='--', alpha=0.5)
+    
+    # --- LEGENDE ---
+    legend_handles = [
+        mpatches.Patch(color=my_palette[0], label='Wahrheit: No QR (0)'),
+        mpatches.Patch(color=my_palette[1], label='Wahrheit: QR (1)')
+    ]
+    import matplotlib.lines as mlines
+    line_handle = mlines.Line2D([], [], color='red', linestyle='--', label=f'Threshold ({threshold})')
+    legend_handles.append(line_handle)
+
+    # ÄNDERUNG: Legende nach unten rechts verschoben
+    plt.legend(handles=legend_handles, loc='lower right', frameon=True, shadow=True)
+    
+    plt.xticks(rotation=45) 
+    plt.tight_layout()
+    
+    plot_path = os.path.join(save_dir, 'prediction_distribution_plot.png')
+    plt.savefig(plot_path, dpi=300)
+    plt.close()
+    print(f"Verteilungs-Plot gespeichert: {plot_path}")
+
 def main():
     # 1. User Input
     print("="*40)
@@ -52,6 +98,13 @@ def main():
     
     if not test_name:
         print("Kein Name eingegeben. Abbruch.")
+        return
+
+    try:
+        raw_input = input("Bitte Schwellenwert für binäre Klassifikation eingeben (0.0 - 1.0): ").strip()
+        PREDICTION_RATE = float(raw_input)
+    except ValueError:
+        print("Ungültige Zahl. Abbruch.")
         return
 
     # Ordner erstellen
@@ -75,6 +128,9 @@ def main():
         return
 
     results = []
+    
+    # Liste für alle Roh-Vorhersagen aller Modelle (für den Violinplot)
+    all_predictions_list = []
 
     print(f"Starte Evaluation von {len(model_files)} Modellen...\n")
 
@@ -94,9 +150,22 @@ def main():
             test_gen = get_test_generator(input_shape)
             
             # 4. Vorhersagen
-            predictions = model.predict(test_gen, verbose=0)
-            y_pred = (predictions > 0.5).astype(int).flatten()
+            # Wir holen hier die rohen Wahrscheinlichkeiten (Floats)
+            raw_predictions = model.predict(test_gen, verbose=0).flatten()
+            
             y_true = test_gen.classes
+            
+            # NEU: Daten sammeln für Verteilungs-Plot
+            # Wir speichern Modellname, Wahrscheinlichkeit und echtes Label
+            df_pred = pd.DataFrame({
+                'Modell': model_name,
+                'Probability': raw_predictions,
+                'True Label': y_true
+            })
+            all_predictions_list.append(df_pred)
+            
+            # Binäre Entscheidung basierend auf User-Input
+            y_pred = (raw_predictions > PREDICTION_RATE).astype(int)
             
             # 5. Metriken berechnen
             acc = accuracy_score(y_true, y_pred)
@@ -118,7 +187,7 @@ def main():
                 'Input Size': str(input_shape)
             })
             
-            # Plot
+            # Plot Confusion Matrix
             plot_confusion_matrix(cm, model_name, save_dir)
             
             # Aufräumen
@@ -181,6 +250,13 @@ def main():
         plt.savefig(plot_path, dpi=300)
         plt.close()
         print(f"Ranking-Plot gespeichert: {plot_path}")
+        
+        # --- NEU: Verteilungs-Plots erstellen ---
+        if all_predictions_list:
+            print("\nErstelle Vorhersage-Verteilungs-Plots (Violin Plot)...")
+            full_pred_df = pd.concat(all_predictions_list, ignore_index=True)
+            # Wir übergeben hier auch den Threshold, damit die Linie richtig gezeichnet wird
+            plot_prediction_distribution(full_pred_df, save_dir, PREDICTION_RATE)
         
     else:
         print("Keine Ergebnisse gesammelt.")
