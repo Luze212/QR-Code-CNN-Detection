@@ -12,7 +12,7 @@ import shutil
 
 # --- KONFIGURATION ---
 BASE_DATA_DIR = 'dataset_final_boxes' # Dataset
-MODELS_DIR = 'models' # für models und models_tfl anwendbar
+MODELS_DIR = 'models_tfl' # für models und models_tfl anwendbar
 LOGS_BASE_DIR = 'logs/Analyse und Vergleich'
 
 def get_test_generator(input_shape):

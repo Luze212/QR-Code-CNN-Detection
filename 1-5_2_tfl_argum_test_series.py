@@ -1,3 +1,16 @@
+import ssl
+import os
+
+# --- FIX: MAC SSL ERROR ---
+os.environ['CURL_CA_BUNDLE'] = ''
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+# --------------------------------------------------
+
 import tensorflow as tf
 from tensorflow.keras import layers, models, optimizers # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
@@ -6,15 +19,14 @@ from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ReduceLROnPlate
 from tensorflow.keras.applications import MobileNetV2, VGG16, ResNet50 # type: ignore
 import matplotlib.pyplot as plt
 import pandas as pd
-import os
 import gc
 
 # --- KONFIGURATION ---
 BASE_DIR = 'dataset_final_boxes'
-ROOT_LOG_DIR = os.path.join('logs', 'Augmentation_Transfer_Test')
-ROOT_MODEL_DIR = os.path.join('models', 'Augmentation_Transfer_Test')
+ROOT_LOG_DIR = os.path.join('logs', 'Augmentation_tfl_Test')
+ROOT_MODEL_DIR = os.path.join('models_tfl')
 
-IMG_SIZE = (300, 300)
+IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
 
 # Trainings-Dauer pro Szenario
@@ -23,9 +35,9 @@ EPOCHS_FINETUNE = 10
 
 # --- AUSWAHL DER MODELLE ---
 MODELS_TO_TEST = [
-    ("MobileNetV2", MobileNetV2),
-    ("VGG16",       VGG16),
-    ("ResNet50",    ResNet50)
+    ("MobileNetV2_224,224", MobileNetV2),
+    # ("VGG16",       VGG16),    
+    # ("ResNet50",    ResNet50)
 ]
 
 # --- AUGMENTATION SZENARIEN ---
@@ -127,15 +139,16 @@ def main():
             train_datagen = ImageDataGenerator(**scenario['params'])
             val_datagen = ImageDataGenerator(rescale=1./255)
 
+            # FIX: verbose hier entfernt (verursachte den Absturz)
             train_gen = train_datagen.flow_from_directory(
                 os.path.join(BASE_DIR, 'train'),
                 target_size=IMG_SIZE, batch_size=BATCH_SIZE,
-                class_mode='binary', verbose=0
+                class_mode='binary'
             )
             val_gen = val_datagen.flow_from_directory(
                 os.path.join(BASE_DIR, 'val'),
                 target_size=IMG_SIZE, batch_size=BATCH_SIZE,
-                class_mode='binary', verbose=0, shuffle=False
+                class_mode='binary', shuffle=False
             )
 
             # 2. Modell bauen (Speicher vorher leeren!)
@@ -149,9 +162,10 @@ def main():
 
             # --- PHASE 1: Warmup ---
             print("   Phase 1: Warmup...")
+            # FIX: verbose=1 (Ladebalken sichtbar)
             hist_warmup = model.fit(
                 train_gen, epochs=EPOCHS_WARMUP,
-                validation_data=val_gen, verbose=0,
+                validation_data=val_gen, verbose=1,
                 callbacks=[csv_logger]
             )
             
@@ -159,21 +173,16 @@ def main():
             print("   Phase 2: Fine-Tuning...")
             base_model.trainable = True
             
-            # Intelligentes Unfreezing:
-            # VGG16 hat nur 19 Layer, MobileNetV2 >150.
-            # Wir tauen die letzten 20% der Layer auf.
+            # Intelligentes Unfreezing
             total_layers = len(base_model.layers)
             unfreeze_count = int(total_layers * 0.2) 
-            # Mindestens 5 Layer, maximal 50 Layer
             unfreeze_count = max(5, min(unfreeze_count, 50))
             
-            # Alle einfrieren bis auf die letzten X
             for layer in base_model.layers[:-unfreeze_count]:
                 layer.trainable = False
                 
             print(f"      (Taue {unfreeze_count} von {total_layers} Layern auf)")
                 
-            # Neu kompilieren (Low LR)
             model.compile(optimizer=optimizers.Adam(learning_rate=1e-5),
                           loss='binary_crossentropy', metrics=['accuracy'])
             
@@ -183,6 +192,7 @@ def main():
                 ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2)
             ]
             
+            # FIX: verbose=1 (Ladebalken sichtbar)
             hist_ft = model.fit(
                 train_gen, epochs=EPOCHS_FINETUNE,
                 validation_data=val_gen, verbose=1,
@@ -202,7 +212,7 @@ def main():
                 'Epochen': len(acc)
             })
 
-            # --- PLOTTING (Standardisiertes Design) ---
+            # --- PLOTTING ---
             epochs_range = range(len(acc))
 
             plt.figure(figsize=(14, 6))
@@ -211,8 +221,6 @@ def main():
             ax1 = plt.subplot(1, 2, 1)
             ax1.plot(epochs_range, acc, label='Training Accuracy', linewidth=2)
             ax1.plot(epochs_range, val_acc, label='Validation Accuracy', linewidth=2)
-            
-            # Vertikale Linie für Fine-Tuning Start (Grün gestrichelt)
             ax1.axvline(x=EPOCHS_WARMUP-1, color='green', linestyle='--', label='Start Fine-Tune')
             
             ax1.set_title(f'{model_name} - {aug_name}: Accuracy (Best: {best_val_acc:.2%})', fontsize=14)
@@ -225,8 +233,6 @@ def main():
             ax2 = plt.subplot(1, 2, 2)
             ax2.plot(epochs_range, loss, label='Training Loss', linewidth=2, color='red')
             ax2.plot(epochs_range, val_loss, label='Validation Loss', linewidth=2, color='orange')
-            
-            # Vertikale Linie auch hier
             ax2.axvline(x=EPOCHS_WARMUP-1, color='green', linestyle='--', label='Start Fine-Tune')
             
             ax2.set_title(f'{model_name} - {aug_name}: Loss', fontsize=14)
