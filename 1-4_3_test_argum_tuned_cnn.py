@@ -11,17 +11,17 @@ import gc
 BASE_DIR = 'dataset_final_boxes'  # Dataset Pfad
 OUTPUT_DIR = 'logs/Argumentation-Tests_Precision_2' # Speicherordner
 IMG_SIZE = (256, 256)
-EPOCHS = 25
+EPOCHS = 35
 
 # --- HIER TUNING WERTE EINTRAGEN ---
 TUNING_CONFIG = {
-        "l2_rate": 0.0,
-        "start_filters": 64,
+        "l2_rate": 0.001,
+        "start_filters": 32,
         "num_blocks": 4,
         "batch_norm": True,
         "dense_units": 512,
         "dropout": 0.3,
-        "learning_rate": 0.00017206382493960582,
+        "learning_rate":  0.0005096389594084337,
         "batch_size": 32
 }
 
