@@ -1,5 +1,0 @@
-Modell,Accuracy,F1-Score,True Pos (QR gefunden),False Pos (Fehlalarm),True Neg (Korrekt ignoriert),False Neg (QR übersehen),Input Size
-TL_MobileNetV2,0.7605,0.8405,195,19,40,55,"(256, 256)"
-"TL_MobileNetV2_224,224",0.7184,0.8018,176,13,46,74,"(224, 224)"
-TL_VGG16,0.5049,0.5876,109,12,47,141,"(256, 256)"
-TL_ResNet50,0.1909,0.0,0,0,59,250,"(256, 256)"

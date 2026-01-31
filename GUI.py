@@ -1,9 +1,12 @@
 import sys
 import os
 
-# --- MACOS QT FIXES ---
+# --- WICHTIGE FIXES FÜR MACOS & VS CODE ---
+# 1. Accessibility abschalten: Verhindert den Absturz/Hänger in VS Code
+os.environ['QT_ACCESSIBILITY'] = '0' 
+
+# 2. Qt Plugin Pfad finden (gegen "Cocoa plugin not found" Fehler)
 import PyQt6
-# 1. Plugin Pfad finden
 def find_qt_plugins():
     base_path = os.path.dirname(PyQt6.__file__)
     paths = [
@@ -16,10 +19,7 @@ def find_qt_plugins():
     return paths[0]
 
 os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = find_qt_plugins()
-
-# 2. WICHTIG: Accessibility Warnungen auf Mac abschalten
-os.environ['QT_ACCESSIBILITY'] = '0' 
-# ---------------------------
+# ------------------------------------------
 
 import matplotlib
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -282,7 +282,6 @@ class MainWindow(QMainWindow):
         self.thresh_slider = QSlider(Qt.Orientation.Horizontal)
         self.thresh_slider.setRange(0, 100)
         self.thresh_slider.setValue(70)
-        # Wenn Slider bewegt wird, sofort Visualisierung updaten
         self.thresh_slider.valueChanged.connect(self.on_slider_change) 
         self.thresh_input = QLineEdit("0.70")
         self.thresh_input.setFixedWidth(50)
@@ -296,7 +295,6 @@ class MainWindow(QMainWindow):
         layout.addWidget(thresh_cont)
 
         # 4. ACTION (KLASSIFIZIERUNG BATCH)
-        # TEXT ANGEPASST
         btn_run = QPushButton("Modell ausführen")
         btn_run.setObjectName("ActionBtn")
         btn_run.setMinimumHeight(40)
@@ -320,7 +318,6 @@ class MainWindow(QMainWindow):
         self.sep(layout)
 
         # 5. READER (Platzhalter für YOLO/OpenCV)
-        # TEXT ANGEPASST
         btn_read = QPushButton("QR-Code erkennen und lesen")
         btn_read.setMinimumHeight(30)
         btn_read.clicked.connect(lambda: self.qr_output.setText("YOLO / Reader Logik noch nicht implementiert."))
