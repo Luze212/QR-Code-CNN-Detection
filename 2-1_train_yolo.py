@@ -70,30 +70,31 @@ def main():
         # project="runs/detect", # optional: keep default
     )
 
-    # 5) Locate best.pt and copy to models_yolo/best.pt
-    # Ultralytics typically writes: runs/detect/train/weights/best.pt
+    # 5) Locate best.pt (preferred) or last.pt and copy to models_yolo/best.pt
     runs_dir = project_root / "runs" / "detect"
-    best_candidates = list(runs_dir.glob("**/weights/best.pt"))
 
-    if not best_candidates:
-        print("[ERROR] Could not find best.pt under runs/detect/**/weights/best.pt")
+    candidates = list(runs_dir.glob("**/weights/best.pt"))
+    if not candidates:
+        candidates = list(runs_dir.glob("**/weights/last.pt"))
+
+    if not candidates:
+        print("[ERROR] Could not find best.pt or last.pt under runs/detect/**/weights/")
         print("       Training may have failed or output path differs.")
         sys.exit(1)
 
-    # Choose the newest best.pt by modification time
-    best_pt = max(best_candidates, key=lambda p: p.stat().st_mtime)
-    print(f"[OK] Found best.pt: {best_pt}")
+    # Choose the newest weights file by modification time
+    src_pt = max(candidates, key=lambda p: p.stat().st_mtime)
+    print(f"[OK] Found weights: {src_pt}")
 
     target_dir = project_root / "models_yolo"
     target_dir.mkdir(parents=True, exist_ok=True)
     target_path = target_dir / "best.pt"
 
-    shutil.copy2(best_pt, target_path)
+    shutil.copy2(src_pt, target_path)
     print(f"[OK] Copied to: {target_path}")
 
     print("\nDone. In your GUI/subprocess call use model path:")
     print(f"  {target_path}")
-
 
 if __name__ == "__main__":
     main()
