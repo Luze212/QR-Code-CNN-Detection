@@ -37,10 +37,16 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.preprocessing.image import img_to_array, load_img # type: ignore
 
+# --- YOLO IMPORTS ---
+import cv2
+#Test Keine Rückmeldung
+from PyQt6.QtCore import QThread, pyqtSignal
+import subprocess, sys, json, os
+
 # --- KONFIGURATION ---
 MODEL_DIRS = ["models", "models_tfl"]
 VALID_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp')
-IMG_SIZE = (256, 256)
+IMG_SIZE = (300, 300)
 
 ARROW_ICON = b"iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gIbDBQyR5yj+AAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAAQUlEQVQoz2JwYGBgYGBgOMCAB4yMjEiCsAF0PRQM6MK4NKAriG4CsiG4FKAqCEsBqoKoIrI8iGoCsiKibgJ5J7o8AHv0C/W+7R+jAAAAAElFTkSuQmCC"
 
@@ -184,9 +190,46 @@ def prepare_image(image_path, target_size):
     except Exception as e:
         print(f"Bildfehler: {e}")
         return None
+    
+# Test Keine Rückmeldung
+class YoloWorker(QThread):
+    finished = pyqtSignal(list, str)  # boxes, error_msg
+
+    def __init__(self, script_path: str, img_path: str, model_path: str):
+        super().__init__()
+        self.script_path = script_path
+        self.img_path = img_path
+        self.model_path = model_path
+
+    def run(self):
+        try:
+            result = subprocess.run(
+                [sys.executable, self.script_path, self.img_path, self.model_path],
+                capture_output=True,
+                text=True
+            )
+        except Exception as e:
+            self.finished.emit([], f"Subprocess Startfehler: {e}")
+            return
+
+        stdout = (result.stdout or "").strip()
+        stderr = (result.stderr or "").strip()
+
+        if stdout == "":
+            msg = f"Kein JSON auf STDOUT.\nReturncode: {result.returncode}\n\nSTDERR:\n{stderr}"
+            self.finished.emit([], msg)
+            return
+
+        try:
+            out = json.loads(stdout)
+            boxes = out.get("boxes", [])
+            err = out.get("error", "")
+            self.finished.emit(boxes, err)
+        except Exception as e:
+            msg = f"JSON Parse Fehler: {e}\n\nSTDOUT:\n{stdout}\n\nSTDERR:\n{stderr}"
+            self.finished.emit([], msg)
 
 # --- HAUPTFENSTER ---
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -200,9 +243,10 @@ class MainWindow(QMainWindow):
         self.current_img_idx = 0  
         self.current_model = None
         self.current_model_path = ""
+        self.yolo_worker = None
         
         # Cache für Ergebnisse: { 'pfad_zum_bild': score_float }
-        self.model_scores = {} 
+        self.model_scores = {}
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -320,7 +364,7 @@ class MainWindow(QMainWindow):
         # 5. READER (Platzhalter für YOLO/OpenCV)
         btn_read = QPushButton("QR-Code erkennen und lesen")
         btn_read.setMinimumHeight(30)
-        btn_read.clicked.connect(lambda: self.qr_output.setText("YOLO / Reader Logik noch nicht implementiert."))
+        btn_read.clicked.connect(self.run_yolo_detect_only)
         layout.addWidget(btn_read)
 
         self.qr_output = QTextEdit()
@@ -530,6 +574,78 @@ class MainWindow(QMainWindow):
         
         self.display(res_pixmap)
         self.class_result.setText(result_text)
+
+    # --- YOLO MODEL ---
+    def run_yolo_detect_only(self):
+        if not self.image_list or self.original_pixmap is None:
+            return
+        
+        import os
+        project_dir = os.path.dirname(__file__)
+
+        script_path = os.path.join(project_dir, "2-2_yolo_boxes.py")   # <- DEIN Scriptname
+        model_path  = os.path.join(project_dir, "models_yolo", "best.pt")
+
+        if not os.path.exists(script_path):
+            self.qr_output.setText(f"Script nicht gefunden:\n{script_path}")
+            return
+
+        if not os.path.exists(model_path):
+            self.qr_output.setText(f"Modell nicht gefunden:\n{model_path}")
+            return
+
+        img_path = self.image_list[self.current_img_idx]
+
+        if not os.path.exists(img_path):
+            self.qr_output.setText(f"Bild nicht gefunden:\n{img_path}")
+            return
+
+        # Script-Pfad absolut
+        script_path = os.path.join(os.path.dirname(__file__), "2-2_yolo_boxes.py")  
+        if not os.path.exists(script_path):
+            #self.qr_output.setText(f"Script: {script_path}\nModel: {model_path}\nImg: {img_path}")
+            self.qr_output.setText(f"Script nicht gefunden:\n{script_path}")
+            return
+
+        # UI: sofort Feedback geben
+        self.qr_output.setText("YOLO läuft... bitte warten.")
+        self.setEnabled(False)  # optional: verhindert Mehrfachklicks während Laufzeit
+
+        # Worker starten
+        self.yolo_worker = YoloWorker(script_path, img_path, "models_yolo/best.pt")
+        self.yolo_worker.finished.connect(self.on_yolo_finished)
+        self.yolo_worker.start()
+
+    def on_yolo_finished(self, boxes, err_msg):
+        self.qr_output.setText(
+            f"YOLO fertig.\nBoxes: {len(boxes)}\n"
+            f"Bild: {self.image_list[self.current_img_idx]}"
+        )
+        self.setEnabled(True)
+
+        if err_msg:
+            # err_msg kann auch leer sein bei Erfolg
+            self.qr_output.setText(f"YOLO fertig, aber Hinweis:\n{err_msg}")
+        else:
+            self.qr_output.setText(f"YOLO Detektionen: {len(boxes)}")
+
+        overlay = self.original_pixmap.copy()
+        painter = QPainter(overlay)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        pen = QPen(QColor(0, 255, 0))
+        pen.setWidth(6)
+        painter.setPen(pen)
+        painter.setFont(QFont("Arial", 14))
+
+        for i, (x1, y1, x2, y2) in enumerate(boxes, 1):
+            painter.drawRect(x1, y1, x2 - x1, y2 - y1)
+            painter.drawText(x1, max(20, y1 - 10), f"det #{i}")
+
+        painter.end()
+        self.display(overlay)
+
+        self.yolo_worker = None
 
     def run_plot(self):
         if self.plot_box.layout().count(): 
