@@ -1,10 +1,45 @@
+# --- Python / Venv ---
 .venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Datasets ---
 dataset_test_yolov8/
 dataset_test_boxes/
 dataset_final_yolov8/
 dataset_final_boxes/
+
+# --- Models / Weights ---
 models/
-tuning_results/
-Aufgabe_RKIM_WS2526.pdf
 models_tfl/
+models_yolo/
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# --- Models / Weights ---
+models/
+models_tfl/
+models_yolo/
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# --- YOLO / Ultralytics outputs ---
+runs/
+tuning_results/
+
+# --- Logs ---
+/logs/
 /logs/Tuning_Phase1/
+
+# --- OS / IDE ---
+.DS_Store
+.vscode/
+.idea/
+
+# --- Docs ---
+Aufgabe_RKIM_WS2526.pdf
