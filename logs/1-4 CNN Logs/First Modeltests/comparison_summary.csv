@@ -1,0 +1,5 @@
+Modell,Beschreibung,Val Accuracy,Epochen
+4_Low_Dropout,Wenig Dropout (Gefahr von Overfitting?),0.8512,13
+1_Baseline,Standardeinstellungen,0.8363,18
+3_Small_Network,Kleines Netzwerk (weniger Parameter),0.8185,10
+2_High_LR,"Hohe Lernrate (schneller, aber ungenauer?)",0.8155,16

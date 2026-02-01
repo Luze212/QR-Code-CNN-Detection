@@ -1,0 +1,7 @@
+start_filters: 64
+num_blocks: 4
+batch_norm: True
+dense_units: 192
+dropout: 0.0
+learning_rate: 0.0001069336793186023
+batch_size: 16

@@ -1,0 +1,6 @@
+Model: ResNet50
+Dense Units: 384
+Dropout: 0.5
+Learning Rate: 0.01
+Optimizer: rmsprop
+Augmentation: Yes (Fixed)

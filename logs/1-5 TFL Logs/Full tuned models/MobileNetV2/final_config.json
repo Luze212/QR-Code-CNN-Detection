@@ -1,0 +1,18 @@
+{
+    "model": "MobileNetV2",
+    "phase1_units": 256,
+    "phase1_dropout": 0.1,
+    "phase1_lr": 0.001,
+    "phase1_opt": "rmsprop",
+    "phase2_layers": 35,
+    "phase2_lr": 5e-05,
+    "augmentation": {
+        "rescale": 0.00392156862745098,
+        "rotation_range": 15,
+        "width_shift_range": 0.1,
+        "height_shift_range": 0.1,
+        "zoom_range": 0.1,
+        "horizontal_flip": true,
+        "fill_mode": "nearest"
+    }
+}

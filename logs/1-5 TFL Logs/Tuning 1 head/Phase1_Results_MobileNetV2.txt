@@ -1,0 +1,6 @@
+Model: MobileNetV2
+Dense Units: 256
+Dropout: 0.1
+Learning Rate: 0.001
+Optimizer: rmsprop
+Augmentation: Yes (Fixed)

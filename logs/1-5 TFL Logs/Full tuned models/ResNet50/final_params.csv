@@ -1,0 +1,2 @@
+model,phase1_units,phase1_dropout,phase1_lr,phase1_opt,phase2_layers,phase2_lr,augmentation
+ResNet50,384,0.5,0.01,rmsprop,150,0.0001,"{'rescale': 0.00392156862745098, 'rotation_range': 15, 'width_shift_range': 0.1, 'height_shift_range': 0.1, 'zoom_range': 0.1, 'horizontal_flip': True, 'fill_mode': 'nearest'}"

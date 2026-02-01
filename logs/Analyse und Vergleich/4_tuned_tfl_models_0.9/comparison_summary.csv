@@ -1,0 +1,7 @@
+Modell,Accuracy,F1-Score,True Pos (QR gefunden),False Pos (Fehlalarm),True Neg (Korrekt ignoriert),False Neg (QR übersehen),Input Size
+Tuned_VGG16_last,0.9547,0.9717,240,4,55,10,"(224, 224)"
+Tuned_VGG16_best,0.9482,0.9679,241,7,52,9,"(224, 224)"
+Tuned_ResNet50_best,0.9288,0.9562,240,12,47,10,"(224, 224)"
+Tuned_ResNet50_last,0.9126,0.9448,231,8,51,19,"(224, 224)"
+Tuned_MobileNetV2_best,0.835,0.8913,209,10,49,41,"(224, 224)"
+Tuned_MobileNetV2_last,0.835,0.8913,209,10,49,41,"(224, 224)"

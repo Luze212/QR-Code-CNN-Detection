@@ -1,0 +1,8 @@
+l2_rate: 0.0
+start_filters: 64
+num_blocks: 4
+batch_norm: True
+dense_units: 512
+dropout: 0.3
+learning_rate: 0.00017206382493960582
+batch_size: 32

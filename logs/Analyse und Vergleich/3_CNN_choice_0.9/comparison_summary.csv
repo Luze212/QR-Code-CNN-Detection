@@ -1,0 +1,5 @@
+Modell,Accuracy,F1-Score,True Pos (QR gefunden),False Pos (Fehlalarm),True Neg (Korrekt ignoriert),False Neg (QR übersehen),Input Size
+"1_best_tuned_Bayesian_1_256,256",0.877,0.9215,223,11,48,27,"(256, 256)"
+5_bonus_Bayesian_1_lightGeom_argumentation,0.8738,0.9199,224,13,46,26,"(256, 256)"
+4_Precision_2_lightGeom_argumentation,0.8317,0.8921,215,17,42,35,"(256, 256)"
+2_best_tuned_Bayesian_precision_2,0.8058,0.8696,200,10,49,50,"(256, 256)"
