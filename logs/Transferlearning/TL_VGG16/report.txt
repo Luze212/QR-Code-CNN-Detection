@@ -1,3 +1,0 @@
-Modell: TL_VGG16
-Accuracy: 0.7961
-Params: LR=0.0001, Drop=0.5

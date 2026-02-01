@@ -8,13 +8,7 @@ import pandas as pd
 import numpy as np
 import os
 import shutil
-import json
-
-# ==========================================
-# --- MACOS M4 OPTIMIERUNG ---
-# ==========================================
-# Accessibility abschalten, um VS Code Abstürze zu verhindern
-os.environ['QT_ACCESSIBILITY'] = '0' 
+import json 
 
 # ==========================================
 # --- KONFIGURATION & EINGABE ---

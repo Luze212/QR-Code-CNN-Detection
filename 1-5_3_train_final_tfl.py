@@ -6,39 +6,40 @@ from tensorflow.keras.applications import VGG16, MobileNetV2, ResNet50 # type: i
 import matplotlib.pyplot as plt
 import os
 import json
+import csv
 
 # ==========================================
 # --- 1. GEWINNER-WERTE EINTRAGEN ---
 # ==========================================
 
 # Modell wählen:
-CHOSEN_MODEL = "MobileNetV2" 
-# CHOSEN_MODEL = "VGG16"
+# CHOSEN_MODEL = "MobileNetV2" 
+CHOSEN_MODEL = "VGG16"
 # CHOSEN_MODEL = "ResNet50"
 
 # Werte aus Tuning Phase 1 (Kopf):
-TUNED_DENSE_UNITS = 384  
-TUNED_DROPOUT = 0.2        
+TUNED_DENSE_UNITS = 320
+TUNED_DROPOUT = 0.0     
 TUNED_LR_PHASE1 = 0.001     
-TUNED_OPTIMIZER = 'adam'    
+TUNED_OPTIMIZER = 'rmsprop'    
 
 # Werte aus Tuning Phase 2 (Körper):
-BEST_UNFREEZE_LAYERS = 80
-BEST_LR_PHASE2 = 1e-5    
+BEST_UNFREEZE_LAYERS = 15
+BEST_LR_PHASE2 = 5e-05    
 
 # ==========================================
 # --- 2. KONFIGURATION ---
 # ==========================================
-PROJECT_NAME = f"Final_Gold_{CHOSEN_MODEL}"
+PROJECT_NAME = f"Tuned_{CHOSEN_MODEL}"
 BASE_DIR = "dataset_final_boxes"
-LOGS_DIR = f"logs/Final_Production/{CHOSEN_MODEL}"
-MODELS_DIR = "models_final"
+LOGS_DIR = f"logs/1-5 TFL Logs/Full tuned models/{CHOSEN_MODEL}"
+MODELS_DIR = "models_tfl"
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
 
 # Epochen (Wie in den Tests)
 EPOCHS_PHASE_1 = 10
-EPOCHS_PHASE_2 = 20 # Oder 20, wenn du dem finalen Modell mehr Zeit geben willst
+EPOCHS_PHASE_2 = 20 # 20 Epochen für das Finale Fine-Tuning
 
 # AUGMENTATION (Gesetz! Darf nicht geändert werden)
 AUGMENTATION_CONFIG = {
@@ -145,6 +146,14 @@ def main():
     with open(os.path.join(LOGS_DIR, "final_config.json"), 'w') as f:
         json.dump(config, f, indent=4)
         
+    # CSV Speichern (zusätzlich)
+    flat_config = config.copy()
+    flat_config['augmentation'] = str(config['augmentation']) 
+    with open(os.path.join(LOGS_DIR, "final_params.csv"), 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(flat_config.keys())
+        writer.writerow(flat_config.values())
+
     print(f"\n=== STARTE FINAL TRAINING: {CHOSEN_MODEL} ===")
     train_gen, val_gen = get_generators()
     
@@ -183,7 +192,6 @@ def main():
     for layer in base_model.layers[:freeze_until]: layer.trainable = False
     
     # Wichtig: Immer Adam für Fine-Tuning nehmen (oder den Tuned Optimizer mit kleiner LR)
-    # Hier nehmen wir Adam als Standard für Stabilität, es sei denn du willst explizit den Tuned Optimizer
     model.compile(optimizer=optimizers.Adam(learning_rate=BEST_LR_PHASE2), 
                   loss='binary_crossentropy', metrics=['accuracy'])
     

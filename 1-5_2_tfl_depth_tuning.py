@@ -12,15 +12,15 @@ import shutil
 # ==========================================
 
 # Welches Modell optimieren wir gerade?
-CHOSEN_MODEL = "MobileNetV2" 
-# CHOSEN_MODEL = "VGG16" 
+# CHOSEN_MODEL = "MobileNetV2" 
+CHOSEN_MODEL = "VGG16" 
 # CHOSEN_MODEL = "ResNet50"
 
 # Trage hier die Ergebnisse aus Skript 1 ein:
-TUNED_DENSE_UNITS = 384    
-TUNED_DROPOUT = 0.2         
-TUNED_LR_PHASE1 = 0.001     
-TUNED_OPTIMIZER = 'adam'    
+TUNED_DENSE_UNITS = 320  
+TUNED_DROPOUT = 0.0   
+TUNED_LR_PHASE1 = 0.001    
+TUNED_OPTIMIZER = 'rmsprop'    
 
 # ==========================================
 # --- 2. AUGMENTATION (gleich head_tuning) ---

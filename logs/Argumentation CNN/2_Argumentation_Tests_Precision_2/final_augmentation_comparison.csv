@@ -1,6 +1,0 @@
-Szenario,Beschreibung,Val Accuracy,Epochen
-2_Light_Geometry,Leichte Drehung/Verschiebung,0.8673139214515686,20
-1_Minimal,Nur Rescaling (Baseline),0.8543689250946045,16
-3_Heavy_Geometry,Starke Verzerrung,0.8478964567184448,19
-4_Lighting_Only,Licht & Farbe,0.8478964567184448,15
-5_Full_Power,Heavy Geometry & Lighting,0.8349514603614807,15

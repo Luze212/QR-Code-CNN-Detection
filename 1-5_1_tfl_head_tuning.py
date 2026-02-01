@@ -13,8 +13,8 @@ import os
 
 # WÄHLE DAS MODELL (nur eins!):
 # CHOSEN_MODEL = "MobileNetV2"
-CHOSEN_MODEL = "VGG16"
-# CHOSEN_MODEL = "ResNet50"
+# CHOSEN_MODEL = "VGG16"
+CHOSEN_MODEL = "ResNet50"
 
 PROJECT_NAME = f"Tuning_Phase1_{CHOSEN_MODEL}" 
 LOG_DIR = "logs/Tuning_Phase1"              
