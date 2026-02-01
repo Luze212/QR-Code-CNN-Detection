@@ -1,0 +1,13 @@
+PyQt6
+
+# CNN stack (pinned to avoid numpy 2.x issues)
+tensorflow-intel==2.16.1
+numpy==1.26.4
+ml-dtypes==0.3.2
+
+# OpenCV pinned (compatible with numpy 1.x)
+opencv-python==4.9.0.80
+
+# YOLO utils (we install torch separately)
+ultralytics
+pillow
