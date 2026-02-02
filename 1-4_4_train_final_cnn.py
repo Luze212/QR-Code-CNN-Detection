@@ -9,8 +9,8 @@ import gc
 # --- PFAD KONFIGURATION ---
 BASE_DIR = 'dataset_final_boxes' # Dataset
 MODELS_DIR = 'models'
-LOGS_DIR = 'logs/Argumentation/Precision_2_lightGeom+light_argumentation'
-MODUL_NAME = 'Precision_2_lightGeom+light_argumentation'
+LOGS_DIR = 'logs/Argumentation/'
+MODUL_NAME = ''
 
 # Ordner erstellen
 os.makedirs(MODELS_DIR, exist_ok=True)
@@ -40,16 +40,11 @@ def get_data_generators(batch_size):
     train_datagen = ImageDataGenerator(
         rescale=1./255,
         rotation_range=15,
-        # shear_range=0.2,
         width_shift_range=0.1,
         height_shift_range=0.1,
         zoom_range=0.1,
         horizontal_flip=True,
         fill_mode='nearest',
-
-        # Lightning
-        brightness_range=[0.3, 1.7],
-        channel_shift_range=50.0,
     )
 
     val_datagen = ImageDataGenerator(rescale=1./255)
