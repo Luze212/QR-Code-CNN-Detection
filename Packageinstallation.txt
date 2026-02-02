@@ -1,0 +1,27 @@
+
+Erster Befehl (als gesamten bist 5. in konsole einfügen)
+
+# 1. Alles Alte weg
+cd /Users/lukas/Documents/GitHub/QR-Code-CNN-Detection/
+deactivate 2>/dev/null
+rm -rf .venv
+
+# 2. Umgebung neu
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+
+# 3. Cache leeren (WICHTIG, damit keine alten Fehler importiert werden)
+pip cache purge
+
+# 4. DIE MAGISCHE KOMBINATION
+# Wir zwingen pip dazu, alles passend zu NumPy 1.x zu suchen
+# Wir verbieten explizit das normale OpenCV (nur headless erlaubt)
+pip install "numpy<2" "opencv-python-headless" PyQt6 tensorflow-macos tensorflow-metal pillow --force-reinstall --no-deps
+
+# 5. Abhängigkeiten nachladen (sicherstellen, dass nichts fehlt)
+pip install "numpy<2" "opencv-python-headless" PyQt6 tensorflow-macos tensorflow-metal pillow
+
+
+Zweiter Befehl (andere Backages, nicht alle. Rest per pip install einfach ziehen)
+pip install matplotlib scikit-learn pandas "numpy<2"
