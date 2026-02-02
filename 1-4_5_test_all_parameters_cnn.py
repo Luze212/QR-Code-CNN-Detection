@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models, optimizers, losses # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
-from tensorflow.keras.callbacks import CSVLogger, EarlyStopping # type: ignore
+from tensorflow.keras.callbacks import CSVLogger, EarlyStopping, ReduceLROnPlateau # type: ignore
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -20,42 +20,41 @@ tf.random.set_seed(seed)
 random.seed(seed)
 
 # ==========================================
-# --- KONFIGURATION & EINGABE ---
+# --- KONFIGURATION ---
 # ==========================================
-
-# Ordner-Struktur
-BASE_MODELS_DIR = 'models/Bayesian_1_256,256_allparams_tests'
-BASE_LOGS_DIR = 'logs/Bayesian_1_256,256_allparams_tests'
+BASE_MODELS_DIR = 'models/Bayesian_1_Final_Tests'
+BASE_LOGS_DIR = 'logs/Bayesian_1_Final_Tests'
 DATASET_DIR = 'dataset_final_boxes'
-
-EXPERIMENT_NAME = "Bayesian_1_256,256_allparams_tests"
+EXPERIMENT_NAME = "Bayesian_1_Tests"
 
 IMG_SIZE = (256, 256)
 INPUT_SHAPE = IMG_SIZE + (3,)
 
-# --- 1. BASIS-WERTE (CNN) ---
+# --- 1. BASIS-WERTE (Deine korrekten Bayesian_1 Werte) ---
 BASE_PARAMS = {
-    'epochs': 25,                       
+    'epochs': 30,                       
     'batch_size': 16,                   
-    'learning_rate': 0.0002266,         
+    'learning_rate': 0.00022659,       
     'optimizer': 'adam',                
     'activation': 'relu',               
-    'dropout': 0.0,                     
-    'dense_units': 320,                 
-    'conv_blocks': 4,                   
-    'start_filters': 32,                
+    'dropout': 0.0,                    
+    'dense_units': 320,            
+    'conv_blocks': 4,                
+    'start_filters': 32,             
     'batch_norm': True,                 
     'loss': 'binary_crossentropy'
 }
 
 # --- 2. EINZEL-PARAMETER TESTS ---
+# Angepasst an deine Basis (Batchsize 16 -> Teste 12, 24 etc.)
 SINGLE_PARAM_TESTS = {
-    'batch_size': [12, 20],              
+    'batch_size': [12, 24],              
     'learning_rate': [0.00002, 0.002],  
-    'dropout': [0.1, 0.3],              
-    'dense_units': [280, 360],          
+    'dropout': [0.1, 0.3], 
+    'dense_units': [260, 380],          
     'conv_blocks': [3, 5],              
-    'batch_norm': [False],              
+    'batch_norm': [False],
+    'start_filters': [26, 38],              
     'optimizer': ['sgd', 'rmsprop'],    
     'activation': ['elu', 'tanh']       
 }
@@ -63,17 +62,13 @@ SINGLE_PARAM_TESTS = {
 # --- 3. KOMBINATIONS-TESTS ---
 COMBINATION_GROUPS = {
     'Combo_Capacity': {
-        'Increase (+)': { 'dense_units': 380, 'conv_blocks': 5, 'start_filters': 48, 'dropout': 0.3 },
-        'Decrease (-)': { 'dense_units': 280, 'conv_blocks': 3, 'start_filters': 20, 'dropout': 0.0 }
-    },
-    'Combo_Dynamics': {
-        'Increase (+)': { 'batch_size': 20, 'learning_rate': 0.002 },
-        'Decrease (-)': { 'batch_size': 12, 'learning_rate': 0.00002 }
+        'Increase (+)': { 'dense_units': 380, 'conv_blocks': 5, 'start_filters': 38, 'dropout': 0.2 },
+        'Decrease (-)': { 'dense_units': 128, 'conv_blocks': 3, 'start_filters': 26, 'dropout': 0.0 }
     }
 }
 
 # ==========================================
-# --- DATA GENERATOR (FIXIERT) ---
+# --- DATA GENERATOR ---
 # ==========================================
 def get_generators(batch_size):
     train_datagen = ImageDataGenerator(
@@ -92,9 +87,9 @@ def get_generators(batch_size):
         target_size=IMG_SIZE,
         batch_size=batch_size,
         class_mode='binary',
-        color_mode='rgb'
+        color_mode='rgb',
+        shuffle=True
     )
-    # Shuffle=False ist kritisch für die korrekte Zuordnung in den Plots!
     val_gen = val_datagen.flow_from_directory(
         os.path.join(DATASET_DIR, 'val'),
         target_size=IMG_SIZE,
@@ -106,7 +101,7 @@ def get_generators(batch_size):
     return train_gen, val_gen
 
 # ==========================================
-# --- MODELL BAUEN (CNN) ---
+# --- MODELL BAUEN ---
 # ==========================================
 def create_model(params):
     model = models.Sequential()
@@ -150,19 +145,16 @@ def create_model(params):
     return model
 
 # ==========================================
-# --- PLOTTING FUNKTIONEN (KORRIGIERT) ---
+# --- PLOTTING FUNKTIONEN ---
 # ==========================================
 sns.set_theme(style="whitegrid", context="notebook", font_scale=1.1)
 BASE_COLOR = '#000000'
-PLOT_PALETTE = sns.color_palette("bright", n_colors=10) 
+PLOT_PALETTE = sns.color_palette("bright", n_colors=12) 
 
 def create_comparison_plots(results_list, category_name, save_folder):
-    """
-    Erstellt History, Split-Violin (Wahrscheinlichkeit) und Bar Plots.
-    """
     plot_colors = [BASE_COLOR] + PLOT_PALETTE[:len(results_list)-1]
 
-    # --- 1. HISTORY PLOT ---
+    # --- 1. History Plot ---
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12))
     
     for idx, res in enumerate(results_list):
@@ -170,7 +162,8 @@ def create_comparison_plots(results_list, category_name, save_folder):
         label = f"{res['label']} (Best: {best:.2%})"
         style = '--' if idx == 0 else '-'
         width = 2.5 if idx == 0 else 2
-        ax1.plot(res['history']['val_accuracy'], label=label, linestyle=style, linewidth=width, color=plot_colors[idx])
+        alpha = 1.0 if idx == 0 else 0.8
+        ax1.plot(res['history']['val_accuracy'], label=label, linestyle=style, linewidth=width, color=plot_colors[idx], alpha=alpha)
         
     ax1.set_title(f'Verlauf Accuracy: {category_name}', fontweight='bold')
     ax1.set_ylabel('Accuracy')
@@ -180,7 +173,7 @@ def create_comparison_plots(results_list, category_name, save_folder):
     for idx, res in enumerate(results_list):
         style = '--' if idx == 0 else '-'
         width = 2.5 if idx == 0 else 2
-        ax2.plot(res['history']['val_loss'], label=res['label'], linestyle=style, linewidth=width, color=plot_colors[idx])
+        ax2.plot(res['history']['val_loss'], label=res['label'], linestyle=style, linewidth=width, color=plot_colors[idx], alpha=0.8)
         
     ax2.set_title(f'Verlauf Loss: {category_name}', fontweight='bold')
     ax2.set_ylabel('Loss')
@@ -191,17 +184,14 @@ def create_comparison_plots(results_list, category_name, save_folder):
     plt.savefig(os.path.join(save_folder, f'History_Comparison_{category_name}.png'), dpi=300)
     plt.close()
 
-    # --- DATEN VORBEREITEN ---
+    # --- Daten vorbereiten ---
     violin_df_list = []
     bar_data = []
     
     for res in results_list:
         bar_data.append({'Config': res['label'], 'Best Accuracy': max(res['history']['val_accuracy'])})
-        
-        # WICHTIG: Hier nutzen wir jetzt die Wahrscheinlichkeiten für den Plot!
         probs = res['y_pred_prob'].flatten()
         true_labels = res['y_true']
-        
         for p, t in zip(probs, true_labels):
             violin_df_list.append({
                 'Config': res['label'],
@@ -212,49 +202,36 @@ def create_comparison_plots(results_list, category_name, save_folder):
     df_bar = pd.DataFrame(bar_data)
     df_violin = pd.DataFrame(violin_df_list)
 
-    # --- 2. SPLIT-VIOLIN PLOT (KONSISTENT MIT EVALUATION) ---
+    # --- 2. Violin Plot ---
     plt.figure(figsize=(14, 8))
-    
     sns.violinplot(data=df_violin, x='Config', y='Probability', hue='True Class', 
                    split=True, inner='quart', 
                    palette={"No QR (0)": "skyblue", "QR (1)": "orange"},
-                   linewidth=1.2)
-    
+                   linewidth=1.2, cut=0)
     plt.axhline(y=0.5, color='red', linestyle='--', linewidth=2, label='Threshold (0.5)')
-    
-    plt.title(f'Analyse: Verteilung der Vorhersage-Sicherheit (Split by Class) - {category_name}', fontweight='bold')
-    plt.ylabel('Vorhersagewahrscheinlichkeit (0.0 = No QR, 1.0 = QR)')
-    plt.xlabel('Konfiguration')
+    plt.title(f'Vorhersage-Sicherheit (Split by Class) - {category_name}', fontweight='bold')
     plt.ylim(-0.05, 1.05)
     plt.xticks(rotation=15, ha='right')
     plt.legend(title='Wahrheit', loc='lower right')
-    plt.grid(True, axis='y', linestyle='--', alpha=0.7)
-    
     plt.tight_layout()
     plt.savefig(os.path.join(save_folder, f'Violin_Split_Plot_{category_name}.png'), dpi=300)
     plt.close()
 
-    # --- 3. HORIZONTAL BAR PLOT ---
+    # --- 3. Bar Plot ---
     plt.figure(figsize=(10, len(results_list) * 0.8 + 2))
-    bp = sns.barplot(data=df_bar, y='Config', x='Best Accuracy', hue='Config', palette=plot_colors, legend=False, orient='h')
-    
-    plt.title(f'Maximale erreichte Accuracy - {category_name}', fontweight='bold')
-    plt.xlabel('Best Accuracy')
+    bp = sns.barplot(data=df_bar, y='Config', x='Best Accuracy', palette=plot_colors, hue='Config', legend=False, orient='h')
+    plt.title(f'Maximale Accuracy - {category_name}', fontweight='bold')
     plt.xlim(0, 1.05)
-    plt.grid(True, axis='x', linestyle='--', alpha=0.7)
-    
     for p in bp.patches:
         width = p.get_width()
-        plt.text(width + 0.01, p.get_y() + p.get_height() / 2.,
-                 f'{width:.2%}', 
+        plt.text(width + 0.01, p.get_y() + p.get_height() / 2., f'{width:.2%}', 
                  ha='left', va='center', fontweight='bold', color='black')
-                 
     plt.tight_layout()
     plt.savefig(os.path.join(save_folder, f'Bar_Plot_Horizontal_{category_name}.png'), dpi=300)
     plt.close()
 
 def create_confusion_matrices(results_list, category_name, save_folder):
-    """Erstellt Konfusionsmatrizen im Vergleich zur Basis."""
+    """Erstellt Konfusionsmatrizen Vergleich (Basis vs. Variante)."""
     base_res = results_list[0]
     base_y_pred = (base_res['y_pred_prob'] > 0.5).astype(int).flatten()
     base_cm = confusion_matrix(base_res['y_true'], base_y_pred)
@@ -267,19 +244,15 @@ def create_confusion_matrices(results_list, category_name, save_folder):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
         labels = ['No QR', 'QR']
         
-        # Basis
         sns.heatmap(base_cm, annot=True, fmt='d', cmap='Blues', cbar=False, 
                     xticklabels=labels, yticklabels=labels, ax=ax1, annot_kws={"size": 14})
-        ax1.set_title(f"Basis (Original)\nAcc: {max(base_res['history']['val_accuracy']):.2%}", fontweight='bold')
-        ax1.set_ylabel('Wahrheit')
-        ax1.set_xlabel('Vorhersage')
+        ax1.set_title(f"Basis (Bayesian 1)\nAcc: {max(base_res['history']['val_accuracy']):.2%}", fontweight='bold')
+        ax1.set_ylabel('Wahrheit'); ax1.set_xlabel('Vorhersage')
 
-        # Vergleich
         sns.heatmap(comp_cm, annot=True, fmt='d', cmap='Blues', cbar=False, 
                     xticklabels=labels, yticklabels=labels, ax=ax2, annot_kws={"size": 14})
         ax2.set_title(f"Variante: {comp_res['label']}\nAcc: {max(comp_res['history']['val_accuracy']):.2%}", fontweight='bold')
-        ax2.set_ylabel('Wahrheit')
-        ax2.set_xlabel('Vorhersage')
+        ax2.set_ylabel('Wahrheit'); ax2.set_xlabel('Vorhersage')
         
         plt.suptitle(f'Confusion Matrix Vergleich: {category_name}', fontsize=16, y=1.02)
         plt.tight_layout()
@@ -334,12 +307,19 @@ def run_full_experiment():
     base_gen_train, base_gen_val = get_generators(BASE_PARAMS['batch_size'])
     base_model = create_model(BASE_PARAMS)
     
+    callbacks_base = [
+        EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True),
+        ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, verbose=1)
+    ]
+    
     history_base = base_model.fit(
         base_gen_train, epochs=BASE_PARAMS['epochs'], validation_data=base_gen_val, verbose=1,
-        callbacks=[EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)]
+        callbacks=callbacks_base
     )
     
-    # DATEN FÜR PLOTS GENERIEREN
+    # Basis-Modell speichern!
+    base_model.save(os.path.join(BASE_MODELS_DIR, "Base_Model.keras"))
+
     print("   Generiere Vorhersagen (Basis)...")
     base_gen_val.reset()
     base_y_pred_prob = base_model.predict(base_gen_val, verbose=0)
@@ -349,10 +329,10 @@ def run_full_experiment():
     print(f">> Basis fertig. Accuracy: {base_best_acc:.2%}")
     
     base_result = {
-        'label': 'Basis (Original)',
+        'label': 'Basis (Bayesian 1)',
         'history': history_base.history,
         'params': BASE_PARAMS,
-        'y_pred_prob': base_y_pred_prob, # Daten für Violin Plot
+        'y_pred_prob': base_y_pred_prob, 
         'y_true': base_y_true
     }
 
@@ -388,12 +368,19 @@ def run_full_experiment():
             model = create_model(new_params)
             
             csv_path = os.path.join(current_log_dir, f"log_{label.replace('=', '_')}.csv")
-            callbacks = [EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True), CSVLogger(csv_path)]
+            
+            callbacks = [
+                EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True),
+                ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, verbose=1),
+                CSVLogger(csv_path)
+            ]
             
             hist = model.fit(t_gen, epochs=new_params['epochs'], validation_data=v_gen, callbacks=callbacks, verbose=1)
-            model.save(os.path.join(current_model_dir, f"Model_{label.replace('=', '_')}.keras"))
             
-            # DATEN FÜR PLOTS GENERIEREN
+            # --- HIER IST DIE ÄNDERUNG: Modell speichern ---
+            model.save(os.path.join(current_model_dir, f"Model_{label.replace('=', '_')}.keras"))
+            # -----------------------------------------------
+
             print("      Generiere Vorhersagen...")
             v_gen.reset()
             y_pred_prob = model.predict(v_gen, verbose=0)
@@ -403,7 +390,7 @@ def run_full_experiment():
                 'label': label,
                 'history': hist.history,
                 'params': new_params,
-                'y_pred_prob': y_pred_prob, # Daten für Violin Plot
+                'y_pred_prob': y_pred_prob, 
                 'y_true': y_true
             })
             

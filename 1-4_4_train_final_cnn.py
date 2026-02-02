@@ -1,42 +1,50 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models, optimizers, regularizers # type: ignore
 from tensorflow.keras.preprocessing.image import ImageDataGenerator # type: ignore
-from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping # type: ignore
+from tensorflow.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping, ReduceLROnPlateau # type: ignore
 import matplotlib.pyplot as plt
 import os
 import gc
+import numpy as np
+import random
+
+# --- REPRODUZIERBARKEIT ---
+# Damit das Ergebnis nicht durch Zufall schlechter wird (z.B. 86% statt 88%)
+seed = 42
+np.random.seed(seed)
+tf.random.set_seed(seed)
+random.seed(seed)
 
 # --- PFAD KONFIGURATION ---
 BASE_DIR = 'dataset_final_boxes' # Dataset
 MODELS_DIR = 'models'
-LOGS_DIR = 'logs/Argumentation/'
-MODUL_NAME = ''
+LOGS_DIR = 'logs/1-4 CNN Logs/4 Final Startpoint/' # Speicherort anpassen
+MODUL_NAME = 'Final_Bayesian_1_Best_Model'
 
 # Ordner erstellen
 os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
 
-# --- FINALE HYPERPARAMETER (Hier Werte aus Tuner) ---
+# --- FINALE HYPERPARAMETER (Dein Bayesian_1 Gewinner) ---
 TUNING_CONFIG = {
-    "start_filters": 64,
+    "start_filters": 32,
     "num_blocks": 4,
     "batch_norm": True,
-    "dense_units": 512,
-    "dropout": 0.3,
-    "learning_rate": 0.00017206382493960582,
-    "batch_size": 32,
-    "l2_rate": 0.0,           # Falls nicht im Tuner, auf 0.0 lassen
+    "dense_units": 320,
+    "dropout": 0.0,
+    "learning_rate": 0.00022659388397303692, # Exakter Wert
+    "batch_size": 16,
+    "l2_rate": 0.0,
     "img_size": (256, 256)
 }
 
 # Training Einstellungen
-EPOCHS = 30
+EPOCHS = 35 # Etwas mehr als im Tuner (20), mit Early Stopping
 
 # --- DATEN-AUGMENTATION ---
 def get_data_generators(batch_size):
     print("Konfiguriere Data Augmentation (Szenario: Light Geometry)...")
     
-    # Argumentationsparameter
     train_datagen = ImageDataGenerator(
         rescale=1./255,
         rotation_range=15,
@@ -66,30 +74,23 @@ def get_data_generators(batch_size):
     )
     return train_gen, val_gen
 
-# --- MODELLBAU (DYNAMISCH) ---
+# --- MODELLBAU (Identisch zum Tuner 1-4_2) ---
 def build_dynamic_model(config):
-    """
-    Baut das Modell automatisch anhand der config-Werte.
-    Erstellt Schleifen für die Anzahl der Blöcke.
-    """
     model = models.Sequential()
     model.add(layers.Input(shape=config['img_size'] + (3,)))
     
-    # L2 Regularisierung setup
     if config.get('l2_rate', 0) > 0:
         reg = regularizers.l2(config['l2_rate'])
     else:
         reg = None
 
-    # --- DYNAMISCHE CONV BLÖCKE ---
-    # Hier passiert die Magie: Wir bauen so viele Blöcke, wie 'num_blocks' sagt.
     current_filters = config['start_filters']
     
     for i in range(config['num_blocks']):
         # 1. Convolution
         model.add(layers.Conv2D(
             current_filters, (3, 3), 
-            activation='relu',       # Standard Aktivierung
+            activation='relu',
             padding='same',
             kernel_regularizer=reg
         ))
@@ -97,15 +98,12 @@ def build_dynamic_model(config):
         # 2. Pooling
         model.add(layers.MaxPooling2D((2, 2)))
         
-        # 3. Batch Normalization (falls im Tuner True)
+        # 3. Batch Normalization (Struktur wie im Tuner Skript)
         if config['batch_norm']:
             model.add(layers.BatchNormalization())
         
-        # Filter verdoppeln für den nächsten Block (typische CNN Struktur)
-        # Block 1: 32 -> Block 2: 64 -> Block 3: 128 ...
         current_filters *= 2
         
-    # --- DENSE LAYERS ---
     model.add(layers.Flatten())
     
     model.add(layers.Dense(
@@ -117,10 +115,8 @@ def build_dynamic_model(config):
     if config['dropout'] > 0:
         model.add(layers.Dropout(config['dropout']))
         
-    # Output Layer (Sigmoid für Binär: 0-1)
     model.add(layers.Dense(1, activation='sigmoid'))
     
-    # Kompilieren
     optimizer = optimizers.Adam(learning_rate=config['learning_rate'])
     model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     
@@ -137,7 +133,6 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     
-    # Accuracy
     ax1.plot(epochs, acc, label='Training Accuracy', linewidth=2)
     ax1.plot(epochs, val_acc, label='Validation Accuracy', linewidth=2)
     ax1.set_title(f'{title_prefix}: Accuracy (Best: {best_val_acc:.2%})', fontsize=14)
@@ -146,7 +141,6 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     ax1.legend(loc='lower right')
     ax1.grid(True, which='both', linestyle='--', alpha=0.7)
     
-    # Loss
     ax2.plot(epochs, loss, label='Training Loss', linewidth=2, color='red')
     ax2.plot(epochs, val_loss, label='Validation Loss', linewidth=2, color='orange')
     ax2.set_title(f'{title_prefix}: Loss', fontsize=14)
@@ -160,40 +154,34 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     plt.savefig(plot_path, dpi=300)
     plt.close()
 
-# --- MAIN ---
 def main():
-    print("STARTE TRAINING: Dynamisches Finales CNN")
+    print("STARTE TRAINING: Finales CNN (Bayesian 1 Reproduktion)")
     print("=======================================")
-    print("Konfiguration:")
-    for k, v in TUNING_CONFIG.items():
-        print(f"  - {k}: {v}")
     
-    # 1. Daten laden
     if not os.path.exists(BASE_DIR):
         print(f"FEHLER: Dataset Ordner nicht gefunden: {BASE_DIR}")
         return
 
     train_gen, val_gen = get_data_generators(TUNING_CONFIG['batch_size'])
     
-    # 2. Modell dynamisch bauen & Session clearen
     tf.keras.backend.clear_session()
     gc.collect()
     
     model = build_dynamic_model(TUNING_CONFIG)
     model.summary()
     
-    # 3. Callbacks
     model_name = f'{MODUL_NAME}.keras'
     model_save_path = os.path.join(MODELS_DIR, model_name)
     log_save_path = os.path.join(LOGS_DIR, 'training_log.csv')
     
+    # HIER ist die Korrektur: ReduceLROnPlateau hinzugefügt!
     callbacks = [
         CSVLogger(log_save_path),
         ModelCheckpoint(model_save_path, monitor='val_accuracy', save_best_only=True, verbose=1),
-        EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True)
+        EarlyStopping(monitor='val_loss', patience=8, restore_best_weights=True),
+        ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=3, verbose=1)
     ]
     
-    # 4. Training
     history = model.fit(
         train_gen,
         epochs=EPOCHS,
@@ -202,12 +190,10 @@ def main():
         verbose=1
     )
     
-    # 5. Speichern
-    plot_and_save_history(history, LOGS_DIR, 'final_plot', 'Final Tuned CNN')
+    plot_and_save_history(history, LOGS_DIR, 'final_plot', 'Final Tuned CNN (Bayesian 1)')
     
     print("\nTRAINING ABGESCHLOSSEN")
     print(f"Modell gespeichert: {model_save_path}")
-    print(f"Logs gespeichert: {LOGS_DIR}")
 
 if __name__ == "__main__":
     main()
