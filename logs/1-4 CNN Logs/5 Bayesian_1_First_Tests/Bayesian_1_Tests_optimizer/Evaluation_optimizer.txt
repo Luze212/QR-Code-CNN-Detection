@@ -1,0 +1,23 @@
+=== AUSWERTUNG: optimizer ===
+
+Basis-Modell Accuracy: 87.70%
+--------------------------------------------------
+1. optimizer=rmsprop [VERBESSERUNG]
+   - Beste Accuracy: 88.35%
+   - Differenz zur Basis: +0.65%
+   - Bester Loss: 0.3242
+   - Geänderte Parameter:
+     * optimizer: rmsprop (Basis: adam)
+
+2. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 87.70%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.3280
+
+3. optimizer=sgd [VERSCHLECHTERUNG]
+   - Beste Accuracy: 80.91%
+   - Differenz zur Basis: -6.80%
+   - Bester Loss: 0.4514
+   - Geänderte Parameter:
+     * optimizer: sgd (Basis: adam)
+

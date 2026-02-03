@@ -1,0 +1,16 @@
+=== AUSWERTUNG: optimizer ===
+
+Basis-Modell Accuracy: 92.88%
+--------------------------------------------------
+1. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 92.88%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.2199
+
+2. optimizer=rmsprop [VERSCHLECHTERUNG]
+   - Beste Accuracy: 91.91%
+   - Differenz zur Basis: -0.97%
+   - Bester Loss: 0.2067
+   - Geänderte Parameter:
+     * optimizer: rmsprop (Basis: adam)
+

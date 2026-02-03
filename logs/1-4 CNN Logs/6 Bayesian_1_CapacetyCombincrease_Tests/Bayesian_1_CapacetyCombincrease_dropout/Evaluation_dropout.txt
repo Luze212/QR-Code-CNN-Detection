@@ -1,0 +1,23 @@
+=== AUSWERTUNG: dropout ===
+
+Basis-Modell Accuracy: 92.88%
+--------------------------------------------------
+1. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 92.88%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.2199
+
+2. dropout=0.1 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 92.23%
+   - Differenz zur Basis: -0.65%
+   - Bester Loss: 0.1956
+   - Geänderte Parameter:
+     * dropout: 0.1 (Basis: 0.2)
+
+3. dropout=0.3 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 91.91%
+   - Differenz zur Basis: -0.97%
+   - Bester Loss: 0.2559
+   - Geänderte Parameter:
+     * dropout: 0.3 (Basis: 0.2)
+

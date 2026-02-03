@@ -22,10 +22,10 @@ random.seed(seed)
 # ==========================================
 # --- KONFIGURATION ---
 # ==========================================
-BASE_MODELS_DIR = 'models/Bayesian_1_Final_Tests'
-BASE_LOGS_DIR = 'logs/Bayesian_1_Final_Tests'
+BASE_MODELS_DIR = 'models/Bayesian_1_CapacetyCombincrease_Tests'
+BASE_LOGS_DIR = 'logs/Bayesian_1_CapacetyCombincrease_Tests'
 DATASET_DIR = 'dataset_final_boxes'
-EXPERIMENT_NAME = "Bayesian_1_Tests"
+EXPERIMENT_NAME = "Bayesian_1_CapacetyCombincrease"
 
 IMG_SIZE = (256, 256)
 INPUT_SHAPE = IMG_SIZE + (3,)
@@ -37,10 +37,10 @@ BASE_PARAMS = {
     'learning_rate': 0.00022659,       
     'optimizer': 'adam',                
     'activation': 'relu',               
-    'dropout': 0.0,                    
-    'dense_units': 320,            
-    'conv_blocks': 4,                
-    'start_filters': 32,             
+    'dropout': 0.2,                 # Von 0.0  
+    'dense_units': 380,             # Von 320            
+    'conv_blocks': 5,               # Von 4
+    'start_filters': 38,            # Von 32
     'batch_norm': True,                 
     'loss': 'binary_crossentropy'
 }
@@ -51,19 +51,19 @@ SINGLE_PARAM_TESTS = {
     'batch_size': [12, 24],              
     'learning_rate': [0.00002, 0.002],  
     'dropout': [0.1, 0.3], 
-    'dense_units': [260, 380],          
-    'conv_blocks': [3, 5],              
+    'dense_units': [420, 340],          
+    'conv_blocks': [4, 7],              
     'batch_norm': [False],
-    'start_filters': [26, 38],              
-    'optimizer': ['sgd', 'rmsprop'],    
-    'activation': ['elu', 'tanh']       
+    'start_filters': [34, 42],              
+    'optimizer': ['rmsprop'],    
+    # 'activation': ['elu', 'tanh']       
 }
 
 # --- 3. KOMBINATIONS-TESTS ---
 COMBINATION_GROUPS = {
     'Combo_Capacity': {
-        'Increase (+)': { 'dense_units': 380, 'conv_blocks': 5, 'start_filters': 38, 'dropout': 0.2 },
-        'Decrease (-)': { 'dense_units': 128, 'conv_blocks': 3, 'start_filters': 26, 'dropout': 0.0 }
+        'Increase (+)': { 'dense_units': 420, 'conv_blocks': 7, 'start_filters': 44, 'dropout': 0.2 },
+        'Decrease (-)': { 'dense_units': 340, 'conv_blocks': 4, 'start_filters': 38, 'dropout': 0.2 }
     }
 }
 

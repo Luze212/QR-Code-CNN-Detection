@@ -1,0 +1,16 @@
+=== AUSWERTUNG: batch_norm ===
+
+Basis-Modell Accuracy: 87.70%
+--------------------------------------------------
+1. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 87.70%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.3280
+
+2. batch_norm=False [VERSCHLECHTERUNG]
+   - Beste Accuracy: 79.61%
+   - Differenz zur Basis: -8.09%
+   - Bester Loss: 0.5949
+   - Geänderte Parameter:
+     * batch_norm: False (Basis: True)
+

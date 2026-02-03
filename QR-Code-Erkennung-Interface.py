@@ -2,14 +2,15 @@ import sys
 import os
 import glob
 import numpy as np
+import PySide6
 
-# --- PYQT6 IMPORTS ---
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+# --- PySide6 IMPORTS ---
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QComboBox, QLineEdit, QFileDialog, 
                              QSlider, QScrollArea, QFrame, QProgressBar, QSizePolicy,
                              QListWidget, QListWidgetItem, QTextEdit)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize, QTimer, QLocale
-from PyQt6.QtGui import QPixmap, QImage, QDoubleValidator, QIcon, QKeyEvent, QPainter, QPen, QColor, QFont
+from PySide6.QtCore import Qt, QThread, Signal, QSize, QTimer, QLocale
+from PySide6.QtGui import QPixmap, QImage, QDoubleValidator, QIcon, QKeyEvent, QPainter, QPen, QColor, QFont
 
 # --- MATPLOTLIB FÜR WINKEL-PLOT ---
 import matplotlib
@@ -111,9 +112,9 @@ QFrame[frameShape="4"] { color: #444; margin-top: 15px; margin-bottom: 15px; }
 
 # 1. CNN WORKER
 class PredictionWorker(QThread):
-    progress = pyqtSignal(int)
-    finished = pyqtSignal(dict) 
-    error = pyqtSignal(str)
+    progress = Signal(int)
+    finished = Signal(dict) 
+    error = Signal(str)
 
     def __init__(self, model_path, image_paths):
         super().__init__()
@@ -140,9 +141,9 @@ class PredictionWorker(QThread):
 
 # 2. YOLO WORKER
 class YoloWorker(QThread):
-    progress = pyqtSignal(int)
-    finished = pyqtSignal(list)
-    error = pyqtSignal(str)
+    progress = Signal(int)
+    finished = Signal(list)
+    error = Signal(str)
 
     def __init__(self, image_path):
         super().__init__()
@@ -206,8 +207,8 @@ class YoloWorker(QThread):
 
 # 3. READER WORKER
 class ReaderWorker(QThread):
-    finished = pyqtSignal(list)
-    error = pyqtSignal(str)
+    finished = Signal(list)
+    error = Signal(str)
 
     def __init__(self, image_path, boxes):
         super().__init__()
@@ -263,8 +264,8 @@ class ReaderWorker(QThread):
 
 # 4. ANGLE WORKER
 class AngleWorker(QThread):
-    finished = pyqtSignal(dict)
-    error = pyqtSignal(str)
+    finished = Signal(dict)
+    error = Signal(str)
 
     def __init__(self, image_path, box_id, boxes):
         super().__init__()

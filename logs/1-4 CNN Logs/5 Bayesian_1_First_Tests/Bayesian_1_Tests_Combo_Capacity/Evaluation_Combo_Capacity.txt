@@ -1,0 +1,28 @@
+=== AUSWERTUNG: Combo_Capacity ===
+
+Basis-Modell Accuracy: 87.70%
+--------------------------------------------------
+1. Increase (+) [VERBESSERUNG]
+   - Beste Accuracy: 91.91%
+   - Differenz zur Basis: +4.21%
+   - Bester Loss: 0.2341
+   - Geänderte Parameter:
+     * dropout: 0.2 (Basis: 0.0)
+     * dense_units: 380 (Basis: 320)
+     * conv_blocks: 5 (Basis: 4)
+     * start_filters: 38 (Basis: 32)
+
+2. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 87.70%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.3280
+
+3. Decrease (-) [VERSCHLECHTERUNG]
+   - Beste Accuracy: 83.17%
+   - Differenz zur Basis: -4.53%
+   - Bester Loss: 0.3627
+   - Geänderte Parameter:
+     * dense_units: 128 (Basis: 320)
+     * conv_blocks: 3 (Basis: 4)
+     * start_filters: 26 (Basis: 32)
+

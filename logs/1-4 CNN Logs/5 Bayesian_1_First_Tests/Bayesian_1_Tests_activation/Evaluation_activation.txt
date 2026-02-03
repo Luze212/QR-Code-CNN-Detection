@@ -1,0 +1,23 @@
+=== AUSWERTUNG: activation ===
+
+Basis-Modell Accuracy: 87.70%
+--------------------------------------------------
+1. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 87.70%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.3280
+
+2. activation=elu [VERSCHLECHTERUNG]
+   - Beste Accuracy: 86.08%
+   - Differenz zur Basis: -1.62%
+   - Bester Loss: 0.3311
+   - Geänderte Parameter:
+     * activation: elu (Basis: relu)
+
+3. activation=tanh [VERSCHLECHTERUNG]
+   - Beste Accuracy: 84.79%
+   - Differenz zur Basis: -2.91%
+   - Bester Loss: 0.3394
+   - Geänderte Parameter:
+     * activation: tanh (Basis: relu)
+

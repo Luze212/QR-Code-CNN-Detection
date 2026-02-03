@@ -1,0 +1,23 @@
+=== AUSWERTUNG: dense_units ===
+
+Basis-Modell Accuracy: 87.70%
+--------------------------------------------------
+1. dense_units=380 [VERBESSERUNG]
+   - Beste Accuracy: 90.94%
+   - Differenz zur Basis: +3.24%
+   - Bester Loss: 0.3137
+   - Geänderte Parameter:
+     * dense_units: 380 (Basis: 320)
+
+2. dense_units=260 [VERBESSERUNG]
+   - Beste Accuracy: 88.35%
+   - Differenz zur Basis: +0.65%
+   - Bester Loss: 0.3259
+   - Geänderte Parameter:
+     * dense_units: 260 (Basis: 320)
+
+3. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 87.70%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.3280
+

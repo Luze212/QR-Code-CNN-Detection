@@ -1,0 +1,23 @@
+=== AUSWERTUNG: conv_blocks ===
+
+Basis-Modell Accuracy: 92.88%
+--------------------------------------------------
+1. conv_blocks=7 [VERBESSERUNG]
+   - Beste Accuracy: 94.50%
+   - Differenz zur Basis: +1.62%
+   - Bester Loss: 0.1710
+   - Geänderte Parameter:
+     * conv_blocks: 7 (Basis: 5)
+
+2. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 92.88%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.2199
+
+3. conv_blocks=4 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 88.35%
+   - Differenz zur Basis: -4.53%
+   - Bester Loss: 0.3342
+   - Geänderte Parameter:
+     * conv_blocks: 4 (Basis: 5)
+
