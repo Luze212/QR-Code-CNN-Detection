@@ -1,0 +1,27 @@
+=== AUSWERTUNG ResNet50: Combo_Capacity ===
+
+Basis-Modell Accuracy: 86.08%
+--------------------------------------------------
+1. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 86.08%
+   - Differenz: +0.00%
+   - Bester Loss: 0.5904
+
+2. Decrease (-) [VERSCHLECHTERUNG]
+   - Beste Accuracy: 84.47%
+   - Differenz: -1.62%
+   - Bester Loss: 0.5120
+   - Geänderte Parameter:
+     * unfreeze_layers: 140 (Basis: 150)
+     * dropout: 0.2 (Basis: 0.3)
+     * dense_units: 232 (Basis: 256)
+
+3. Increase (+) [VERSCHLECHTERUNG]
+   - Beste Accuracy: 70.23%
+   - Differenz: -15.86%
+   - Bester Loss: 0.6175
+   - Geänderte Parameter:
+     * unfreeze_layers: 160 (Basis: 150)
+     * dropout: 0.4 (Basis: 0.3)
+     * dense_units: 280 (Basis: 256)
+

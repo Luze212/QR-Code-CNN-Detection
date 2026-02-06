@@ -1,0 +1,27 @@
+=== AUSWERTUNG MobileNetV2: Combo_Capacity ===
+
+Basis-Modell Accuracy: 89.97%
+--------------------------------------------------
+1. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3091
+
+2. Increase (+)
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3460
+   - Geänderte Parameter:
+     * unfreeze_layers: 30 (Basis: 20)
+     * dropout: 0.3 (Basis: 0.0)
+     * dense_units: 380 (Basis: 320)
+
+3. Decrease (-) [VERSCHLECHTERUNG]
+   - Beste Accuracy: 84.79%
+   - Differenz: -5.18%
+   - Bester Loss: 0.4390
+   - Geänderte Parameter:
+     * unfreeze_layers: 10 (Basis: 20)
+     * dropout: 0.1 (Basis: 0.0)
+     * dense_units: 260 (Basis: 320)
+

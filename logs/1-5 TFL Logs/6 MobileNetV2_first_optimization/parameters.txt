@@ -1,0 +1,9 @@
+'warmup_epochs': 10, 
+'warmup_lr': 0.001, 
+'warmup_opt': 'rmsprop',
+'finetune_epochs': 25,  
+'finetune_lr': 1e-04,       # vorher 5e-05
+'unfreeze_layers': 25,      # vorher 20      #max 154
+'batch_size': 38,           # vorher 32 
+'dropout': 0.3,             # vorher 0.0 
+'dense_units': 260          # vorher 320

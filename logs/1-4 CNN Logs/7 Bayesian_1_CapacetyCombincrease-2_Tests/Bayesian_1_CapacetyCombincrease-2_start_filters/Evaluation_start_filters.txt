@@ -1,0 +1,23 @@
+=== AUSWERTUNG: start_filters ===
+
+Basis-Modell Accuracy: 93.20%
+--------------------------------------------------
+1. start_filters=42 [VERBESSERUNG]
+   - Beste Accuracy: 93.85%
+   - Differenz zur Basis: +0.65%
+   - Bester Loss: 0.2223
+   - Geänderte Parameter:
+     * start_filters: 42 (Basis: 44)
+
+2. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 93.20%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.2043
+
+3. start_filters=34
+   - Beste Accuracy: 92.88%
+   - Differenz zur Basis: -0.32%
+   - Bester Loss: 0.1910
+   - Geänderte Parameter:
+     * start_filters: 34 (Basis: 44)
+

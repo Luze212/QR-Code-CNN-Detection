@@ -1,0 +1,23 @@
+=== AUSWERTUNG VGG16: unfreeze_layers ===
+
+Basis-Modell Accuracy: 89.32%
+--------------------------------------------------
+1. unfreeze_layers=12 [VERBESSERUNG]
+   - Beste Accuracy: 92.88%
+   - Differenz: +3.56%
+   - Bester Loss: 0.2401
+   - Geänderte Parameter:
+     * unfreeze_layers: 12 (Basis: 15)
+
+2. unfreeze_layers=18 [VERBESSERUNG]
+   - Beste Accuracy: 91.26%
+   - Differenz: +1.94%
+   - Bester Loss: 0.2352
+   - Geänderte Parameter:
+     * unfreeze_layers: 18 (Basis: 15)
+
+3. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.32%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3005
+

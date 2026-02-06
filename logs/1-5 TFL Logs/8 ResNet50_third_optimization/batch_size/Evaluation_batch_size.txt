@@ -1,0 +1,23 @@
+=== AUSWERTUNG ResNet50: batch_size ===
+
+Basis-Modell Accuracy: 93.53%
+--------------------------------------------------
+1. batch_size=48 [VERBESSERUNG]
+   - Beste Accuracy: 94.17%
+   - Differenz: +0.65%
+   - Bester Loss: 0.2829
+   - Geänderte Parameter:
+     * batch_size: 48 (Basis: 46)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 93.53%
+   - Differenz: +0.00%
+   - Bester Loss: 0.2220
+
+3. batch_size=44 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 91.91%
+   - Differenz: -1.62%
+   - Bester Loss: 0.3272
+   - Geänderte Parameter:
+     * batch_size: 44 (Basis: 46)
+

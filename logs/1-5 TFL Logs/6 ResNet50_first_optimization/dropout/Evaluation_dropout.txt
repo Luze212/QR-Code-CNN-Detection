@@ -1,0 +1,23 @@
+=== AUSWERTUNG ResNet50: dropout ===
+
+Basis-Modell Accuracy: 88.67%
+--------------------------------------------------
+1. dropout=0.3 [VERBESSERUNG]
+   - Beste Accuracy: 92.23%
+   - Differenz: +3.56%
+   - Bester Loss: 0.3446
+   - Geänderte Parameter:
+     * dropout: 0.3 (Basis: 0.2)
+
+2. dropout=0.1 [VERBESSERUNG]
+   - Beste Accuracy: 90.61%
+   - Differenz: +1.94%
+   - Bester Loss: 0.3136
+   - Geänderte Parameter:
+     * dropout: 0.1 (Basis: 0.2)
+
+3. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 88.67%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3821
+

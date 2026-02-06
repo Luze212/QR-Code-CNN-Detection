@@ -1,0 +1,23 @@
+=== AUSWERTUNG VGG16: dropout ===
+
+Basis-Modell Accuracy: 89.32%
+--------------------------------------------------
+1. dropout=0.1 [VERBESSERUNG]
+   - Beste Accuracy: 92.88%
+   - Differenz: +3.56%
+   - Bester Loss: 0.2001
+   - Geänderte Parameter:
+     * dropout: 0.1 (Basis: 0.5)
+
+2. dropout=0.3 [VERBESSERUNG]
+   - Beste Accuracy: 90.61%
+   - Differenz: +1.29%
+   - Bester Loss: 0.2976
+   - Geänderte Parameter:
+     * dropout: 0.3 (Basis: 0.5)
+
+3. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.32%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3005
+

@@ -1,0 +1,23 @@
+=== AUSWERTUNG MobileNetV2: dropout ===
+
+Basis-Modell Accuracy: 89.97%
+--------------------------------------------------
+1. dropout=0.1 [VERBESSERUNG]
+   - Beste Accuracy: 90.94%
+   - Differenz: +0.97%
+   - Bester Loss: 0.3268
+   - Geänderte Parameter:
+     * dropout: 0.1 (Basis: 0.0)
+
+2. dropout=0.3 [VERBESSERUNG]
+   - Beste Accuracy: 90.94%
+   - Differenz: +0.97%
+   - Bester Loss: 0.3396
+   - Geänderte Parameter:
+     * dropout: 0.3 (Basis: 0.0)
+
+3. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3091
+

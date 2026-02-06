@@ -29,6 +29,8 @@ models_cnn
 *.pth
 *.onnx
 *.engine
+yolov8n.pt
+yolov8m.pt
 
 # --- YOLO / Ultralytics outputs ---
 runs/

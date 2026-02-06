@@ -1,0 +1,23 @@
+=== AUSWERTUNG: learning_rate ===
+
+Basis-Modell Accuracy: 93.20%
+--------------------------------------------------
+1. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 93.20%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.2043
+
+2. learning_rate=0.002 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 92.56%
+   - Differenz zur Basis: -0.65%
+   - Bester Loss: 0.2327
+   - Geänderte Parameter:
+     * learning_rate: 0.002 (Basis: 0.00022659)
+
+3. learning_rate=2e-05 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 88.03%
+   - Differenz zur Basis: -5.18%
+   - Bester Loss: 0.2813
+   - Geänderte Parameter:
+     * learning_rate: 2e-05 (Basis: 0.00022659)
+

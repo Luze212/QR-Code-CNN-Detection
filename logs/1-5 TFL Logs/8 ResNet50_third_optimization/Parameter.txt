@@ -1,0 +1,9 @@
+'warmup_epochs': 10, 
+'warmup_lr': 0.001, 
+'warmup_opt': 'adam',
+'finetune_epochs': 25, 
+'finetune_lr': 1e-4,        # Final
+'unfreeze_layers': 150,     # max 175       Final
+'batch_size': 46,           # vorher 42
+'dropout': 0.3,             # Final
+'dense_units': 180          # vorher 200

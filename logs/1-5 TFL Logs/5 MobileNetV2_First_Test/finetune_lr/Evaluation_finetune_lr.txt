@@ -1,0 +1,23 @@
+=== AUSWERTUNG MobileNetV2: finetune_lr ===
+
+Basis-Modell Accuracy: 89.97%
+--------------------------------------------------
+1. finetune_lr=0.0001 [VERBESSERUNG]
+   - Beste Accuracy: 91.91%
+   - Differenz: +1.94%
+   - Bester Loss: 0.3128
+   - Geänderte Parameter:
+     * finetune_lr: 0.0001 (Basis: 5e-05)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3091
+
+3. finetune_lr=1e-06 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 85.44%
+   - Differenz: -4.53%
+   - Bester Loss: 0.4451
+   - Geänderte Parameter:
+     * finetune_lr: 1e-06 (Basis: 5e-05)
+

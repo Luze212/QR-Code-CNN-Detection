@@ -1,0 +1,23 @@
+=== AUSWERTUNG MobileNetV2: batch_size ===
+
+Basis-Modell Accuracy: 89.97%
+--------------------------------------------------
+1. batch_size=38 [VERBESSERUNG]
+   - Beste Accuracy: 91.59%
+   - Differenz: +1.62%
+   - Bester Loss: 0.3133
+   - Geänderte Parameter:
+     * batch_size: 38 (Basis: 32)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3091
+
+3. batch_size=26 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 88.67%
+   - Differenz: -1.29%
+   - Bester Loss: 0.3157
+   - Geänderte Parameter:
+     * batch_size: 26 (Basis: 32)
+

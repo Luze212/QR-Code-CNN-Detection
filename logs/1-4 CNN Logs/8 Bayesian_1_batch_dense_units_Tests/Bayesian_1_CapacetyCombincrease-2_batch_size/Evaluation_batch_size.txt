@@ -1,0 +1,23 @@
+=== AUSWERTUNG: batch_size ===
+
+Basis-Modell Accuracy: 94.50%
+--------------------------------------------------
+1. Basis (Bayesian 1) [REFERENZ]
+   - Beste Accuracy: 94.50%
+   - Differenz zur Basis: +0.00%
+   - Bester Loss: 0.1791
+
+2. batch_size=20 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 93.20%
+   - Differenz zur Basis: -1.29%
+   - Bester Loss: 0.2307
+   - Geänderte Parameter:
+     * batch_size: 20 (Basis: 24)
+
+3. batch_size=28 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 93.20%
+   - Differenz zur Basis: -1.29%
+   - Bester Loss: 0.2027
+   - Geänderte Parameter:
+     * batch_size: 28 (Basis: 24)
+

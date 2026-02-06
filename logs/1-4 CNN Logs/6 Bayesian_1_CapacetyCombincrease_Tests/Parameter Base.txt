@@ -1,0 +1,11 @@
+'epochs': 30,                       
+'batch_size': 16,                   
+'learning_rate': 0.00022659,       
+'optimizer': 'adam',                
+'activation': 'relu',               
+'dropout': 0.2,                 # Von 0.0  
+'dense_units': 380,             # Von 320            
+'conv_blocks': 5,               # Von 4
+'start_filters': 38,            # Von 32
+'batch_norm': True,                 
+'loss': 'binary_crossentropy'

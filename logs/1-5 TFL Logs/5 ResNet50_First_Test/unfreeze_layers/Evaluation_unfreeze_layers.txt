@@ -1,0 +1,23 @@
+=== AUSWERTUNG ResNet50: unfreeze_layers ===
+
+Basis-Modell Accuracy: 86.08%
+--------------------------------------------------
+1. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 86.08%
+   - Differenz: +0.00%
+   - Bester Loss: 0.5904
+
+2. unfreeze_layers=140 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 85.11%
+   - Differenz: -0.97%
+   - Bester Loss: 0.5606
+   - Geänderte Parameter:
+     * unfreeze_layers: 140 (Basis: 150)
+
+3. unfreeze_layers=160 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 73.14%
+   - Differenz: -12.94%
+   - Bester Loss: 0.5907
+   - Geänderte Parameter:
+     * unfreeze_layers: 160 (Basis: 150)
+

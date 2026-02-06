@@ -1,0 +1,26 @@
+=== AUSWERTUNG VGG16: Combo_Capacity ===
+
+Basis-Modell Accuracy: 89.32%
+--------------------------------------------------
+1. Increase (+) [VERBESSERUNG]
+   - Beste Accuracy: 92.23%
+   - Differenz: +2.91%
+   - Bester Loss: 0.2451
+   - Geänderte Parameter:
+     * unfreeze_layers: 18 (Basis: 15)
+     * dense_units: 562 (Basis: 512)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.32%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3005
+
+3. Decrease (-)
+   - Beste Accuracy: 89.32%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3230
+   - Geänderte Parameter:
+     * unfreeze_layers: 12 (Basis: 15)
+     * dropout: 0.3 (Basis: 0.5)
+     * dense_units: 462 (Basis: 512)
+

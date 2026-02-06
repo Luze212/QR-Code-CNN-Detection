@@ -1,100 +1,48 @@
+from ultralytics import YOLO
 import os
-import shutil
-import sys
-from pathlib import Path
 
+# ================= KONFIGURATION =================
+DATA_YAML = 'dataset_final_yolov8/data.yaml'
+PROJECT_NAME = 'QR_Code_Training' 
+EPOCHS = 50
+IMG_SIZE = 640
 
-def ensure_fixed_data_yaml(dataset_dir: Path) -> Path:
-    """
-    Roboflow export uses ../train/images etc. We create a stable YAML that works when run from project root.
-    We do NOT delete the old file; we create/overwrite a fixed one named data_fixed.yaml.
-    """
-    fixed_yaml = dataset_dir / "data_fixed.yaml"
+BATCH_SIZE = 16 
+WORKERS = 1     
 
-    content = """path: dataset_final_yolov8
-train: train/images
-val: valid/images
-test: test/images
+MODELS_TO_TRAIN = [
+    # "yolov8n.pt", 
+    "yolov8m.pt"]
+# =================================================
 
-names:
-  0: QR-Code
-"""
-    fixed_yaml.write_text(content, encoding="utf-8")
-    return fixed_yaml
+def run_training():
+    if not os.path.exists(DATA_YAML):
+        print(f"FEHLER: '{DATA_YAML}' nicht gefunden!")
+        return
 
+    print(f"Starte High-Performance Training (Batch {BATCH_SIZE})...")
 
-def main():
-    project_root = Path(__file__).resolve().parent
-    dataset_dir = project_root / "dataset_final_yolov8"
+    for model_name in MODELS_TO_TRAIN:
+        print(f"\n>>> TRAINIERE: {model_name} <<<")
+        
+        model = YOLO(model_name)
+        
+        model.train(
+            data=DATA_YAML,
+            epochs=EPOCHS,
+            imgsz=IMG_SIZE,
+            batch=BATCH_SIZE,
+            workers=WORKERS,      # Fix für Datendurchsatz auf M-Chips
+            project=PROJECT_NAME, 
+            name=f"train_{model_name.split('.')[0]}",
+            plots=True,
+            exist_ok=True,        # Überschreibt alte Ordner gleichen Namens
+            device='mps',         # Apple Silicon GPU
+            amp=True              # Mixed Precision (Standard für Speed)
+        )
+        
+        print(f"Validiere {model_name}...")
+        model.val()
 
-    if not dataset_dir.exists():
-        print(f"[ERROR] Dataset folder not found: {dataset_dir}")
-        sys.exit(1)
-
-    # 1) Create robust YAML (so we don't rely on ../ paths)
-    data_yaml = ensure_fixed_data_yaml(dataset_dir)
-    print(f"[OK] Using dataset config: {data_yaml}")
-
-    # 2) Import ultralytics only after checks
-    try:
-        from ultralytics import YOLO
-    except Exception as e:
-        print("[ERROR] Could not import ultralytics. Install first:")
-        print("        pip install -U ultralytics opencv-python")
-        print(f"Details: {e}")
-        sys.exit(1)
-
-    # 3) Train settings (CPU-safe overnight defaults)
-    # You can tweak epochs/imgsz/batch here.
-    model_base = "yolov8n.pt"   # pretrained base
-    imgsz = 640
-    epochs = 30
-    batch = 2
-    workers = 0
-    patience = 20
-
-    print("[INFO] Starting training with:")
-    print(f"       model={model_base}, imgsz={imgsz}, epochs={epochs}, batch={batch}, workers={workers}, patience={patience}")
-    print("       (If you run out of RAM, reduce batch to 2.)")
-
-    # 4) Start training
-    model = YOLO(model_base)
-    results = model.train(
-        data=str(data_yaml),
-        imgsz=imgsz,
-        epochs=epochs,
-        batch=batch,
-        workers=workers,
-        patience=patience,
-        # name="qr_yolo_train",  # optional: fixed run name
-        # project="runs/detect", # optional: keep default
-    )
-
-    # 5) Locate best.pt (preferred) or last.pt and copy to models_yolo/best.pt
-    runs_dir = project_root / "runs" / "detect"
-
-    candidates = list(runs_dir.glob("**/weights/best.pt"))
-    if not candidates:
-        candidates = list(runs_dir.glob("**/weights/last.pt"))
-
-    if not candidates:
-        print("[ERROR] Could not find best.pt or last.pt under runs/detect/**/weights/")
-        print("       Training may have failed or output path differs.")
-        sys.exit(1)
-
-    # Choose the newest weights file by modification time
-    src_pt = max(candidates, key=lambda p: p.stat().st_mtime)
-    print(f"[OK] Found weights: {src_pt}")
-
-    target_dir = project_root / "models_yolo"
-    target_dir.mkdir(parents=True, exist_ok=True)
-    target_path = target_dir / "best.pt"
-
-    shutil.copy2(src_pt, target_path)
-    print(f"[OK] Copied to: {target_path}")
-
-    print("\nDone. In your GUI/subprocess call use model path:")
-    print(f"  {target_path}")
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    run_training()

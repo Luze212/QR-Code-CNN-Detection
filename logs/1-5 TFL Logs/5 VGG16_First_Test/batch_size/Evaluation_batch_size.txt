@@ -1,0 +1,23 @@
+=== AUSWERTUNG VGG16: batch_size ===
+
+Basis-Modell Accuracy: 89.32%
+--------------------------------------------------
+1. batch_size=26 [VERBESSERUNG]
+   - Beste Accuracy: 92.88%
+   - Differenz: +3.56%
+   - Bester Loss: 0.2256
+   - Geänderte Parameter:
+     * batch_size: 26 (Basis: 32)
+
+2. batch_size=38 [VERBESSERUNG]
+   - Beste Accuracy: 92.88%
+   - Differenz: +3.56%
+   - Bester Loss: 0.1790
+   - Geänderte Parameter:
+     * batch_size: 38 (Basis: 32)
+
+3. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.32%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3005
+

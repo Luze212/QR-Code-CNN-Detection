@@ -22,10 +22,10 @@ random.seed(seed)
 # ==========================================
 # --- KONFIGURATION ---
 # ==========================================
-BASE_MODELS_DIR = 'models/Bayesian_1_CapacetyCombincrease_Tests'
-BASE_LOGS_DIR = 'logs/Bayesian_1_CapacetyCombincrease_Tests'
+BASE_MODELS_DIR = 'models/3 Bayesian_1_CapacetyCombincrease-2_Tests'
+BASE_LOGS_DIR = 'logs/1-4 CNN Logs/3 Bayesian_1_CapacetyCombincrease-2_Tests'
 DATASET_DIR = 'dataset_final_boxes'
-EXPERIMENT_NAME = "Bayesian_1_CapacetyCombincrease"
+EXPERIMENT_NAME = "Bayesian_1_CapacetyCombincrease-2"
 
 IMG_SIZE = (256, 256)
 INPUT_SHAPE = IMG_SIZE + (3,)
@@ -36,12 +36,12 @@ BASE_PARAMS = {
     'batch_size': 16,                   
     'learning_rate': 0.00022659,       
     'optimizer': 'adam',                
-    'activation': 'relu',               
-    'dropout': 0.2,                 # Von 0.0  
-    'dense_units': 380,             # Von 320            
-    'conv_blocks': 5,               # Von 4
-    'start_filters': 38,            # Von 32
-    'batch_norm': True,                 
+    'activation': 'relu',           # Final               
+    'dropout': 0.2,  
+    'dense_units': 420,             # Von 380          
+    'conv_blocks': 7,               # Von 5
+    'start_filters': 44,            # Von 38
+    'batch_norm': True,             # Final                 
     'loss': 'binary_crossentropy'
 }
 
@@ -51,9 +51,9 @@ SINGLE_PARAM_TESTS = {
     'batch_size': [12, 24],              
     'learning_rate': [0.00002, 0.002],  
     'dropout': [0.1, 0.3], 
-    'dense_units': [420, 340],          
-    'conv_blocks': [4, 7],              
-    'batch_norm': [False],
+    'dense_units': [440, 400],          
+    'conv_blocks': [6, 8],              
+    # 'batch_norm': [False],
     'start_filters': [34, 42],              
     'optimizer': ['rmsprop'],    
     # 'activation': ['elu', 'tanh']       
@@ -61,10 +61,10 @@ SINGLE_PARAM_TESTS = {
 
 # --- 3. KOMBINATIONS-TESTS ---
 COMBINATION_GROUPS = {
-    'Combo_Capacity': {
-        'Increase (+)': { 'dense_units': 420, 'conv_blocks': 7, 'start_filters': 44, 'dropout': 0.2 },
-        'Decrease (-)': { 'dense_units': 340, 'conv_blocks': 4, 'start_filters': 38, 'dropout': 0.2 }
-    }
+    #'Combo_Capacity': {
+    #    'Increase (+)': { 'dense_units': 450, 'conv_blocks': 9, 'start_filters': 44, 'dropout': 0.2 },
+    #    'Increase 2 (+)': { 'dense_units': 480, 'conv_blocks': 12, 'start_filters': 38, 'dropout': 0.2 }
+    #}
 }
 
 # ==========================================

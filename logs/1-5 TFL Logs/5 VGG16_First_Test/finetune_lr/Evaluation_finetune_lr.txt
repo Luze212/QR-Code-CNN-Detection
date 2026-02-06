@@ -1,0 +1,23 @@
+=== AUSWERTUNG VGG16: finetune_lr ===
+
+Basis-Modell Accuracy: 89.32%
+--------------------------------------------------
+1. finetune_lr=0.0001 [VERBESSERUNG]
+   - Beste Accuracy: 92.56%
+   - Differenz: +3.24%
+   - Bester Loss: 0.2267
+   - Geänderte Parameter:
+     * finetune_lr: 0.0001 (Basis: 1e-05)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.32%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3005
+
+3. finetune_lr=1e-06 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 83.17%
+   - Differenz: -6.15%
+   - Bester Loss: 0.4664
+   - Geänderte Parameter:
+     * finetune_lr: 1e-06 (Basis: 1e-05)
+

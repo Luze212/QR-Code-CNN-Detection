@@ -1,0 +1,23 @@
+=== AUSWERTUNG ResNet50: dense_units ===
+
+Basis-Modell Accuracy: 86.08%
+--------------------------------------------------
+1. dense_units=232 [VERBESSERUNG]
+   - Beste Accuracy: 87.06%
+   - Differenz: +0.97%
+   - Bester Loss: 0.4941
+   - Geänderte Parameter:
+     * dense_units: 232 (Basis: 256)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 86.08%
+   - Differenz: +0.00%
+   - Bester Loss: 0.5904
+
+3. dense_units=280
+   - Beste Accuracy: 85.76%
+   - Differenz: -0.32%
+   - Bester Loss: 0.4903
+   - Geänderte Parameter:
+     * dense_units: 280 (Basis: 256)
+

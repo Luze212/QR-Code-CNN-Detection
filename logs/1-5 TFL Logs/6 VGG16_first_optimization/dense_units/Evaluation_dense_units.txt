@@ -1,0 +1,23 @@
+=== AUSWERTUNG VGG16: dense_units ===
+
+Basis-Modell Accuracy: 92.23%
+--------------------------------------------------
+1. dense_units=422 [VERBESSERUNG]
+   - Beste Accuracy: 95.47%
+   - Differenz: +3.24%
+   - Bester Loss: 0.1343
+   - Geänderte Parameter:
+     * dense_units: 422 (Basis: 462)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 92.23%
+   - Differenz: +0.00%
+   - Bester Loss: 0.1902
+
+3. dense_units=482 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 90.61%
+   - Differenz: -1.62%
+   - Bester Loss: 0.2075
+   - Geänderte Parameter:
+     * dense_units: 482 (Basis: 462)
+

@@ -1,0 +1,23 @@
+=== AUSWERTUNG MobileNetV2: dense_units ===
+
+Basis-Modell Accuracy: 89.97%
+--------------------------------------------------
+1. dense_units=260 [VERBESSERUNG]
+   - Beste Accuracy: 91.91%
+   - Differenz: +1.94%
+   - Bester Loss: 0.3049
+   - Geänderte Parameter:
+     * dense_units: 260 (Basis: 320)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3091
+
+3. dense_units=380 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 89.00%
+   - Differenz: -0.97%
+   - Bester Loss: 0.3311
+   - Geänderte Parameter:
+     * dense_units: 380 (Basis: 320)
+

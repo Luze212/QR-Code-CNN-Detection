@@ -1,0 +1,23 @@
+=== AUSWERTUNG MobileNetV2: unfreeze_layers ===
+
+Basis-Modell Accuracy: 89.97%
+--------------------------------------------------
+1. unfreeze_layers=15 [VERBESSERUNG]
+   - Beste Accuracy: 91.59%
+   - Differenz: +1.62%
+   - Bester Loss: 0.2957
+   - Geänderte Parameter:
+     * unfreeze_layers: 15 (Basis: 20)
+
+2. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3091
+
+3. unfreeze_layers=25
+   - Beste Accuracy: 89.97%
+   - Differenz: +0.00%
+   - Bester Loss: 0.2805
+   - Geänderte Parameter:
+     * unfreeze_layers: 25 (Basis: 20)
+

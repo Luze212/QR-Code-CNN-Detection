@@ -24,50 +24,48 @@ random.seed(seed)
 # --- KONFIGURATION ---
 # ==========================================
 # HIER WÄHLEN: Welches Modell soll getestet werden?
-CHOSEN_MODEL = "MobileNetV2" 
-# CHOSEN_MODEL = "ResNet50"
-# CHOSEN_MODEL = "VGG16"
+CHOSEN_MODEL = "VGG16"
 
-BASE_MODELS_DIR = f'models/TFL_Tests_{CHOSEN_MODEL}'
-BASE_LOGS_DIR = f'logs/TFL_Tests_{CHOSEN_MODEL}'
+BASE_MODELS_DIR = f'models/TFL_third_optimization_{CHOSEN_MODEL}'
+BASE_LOGS_DIR = f'logs/1-5 TFL Logs/8 {CHOSEN_MODEL}_third_optimization'
 DATASET_DIR = 'dataset_final_boxes'
 IMG_SIZE = (224, 224)
 INPUT_SHAPE = IMG_SIZE + (3,)
 
 # --- BASIS HYPERPARAMETER (Deine Gewinner-Werte) ---
 CONFIGS = {
-    "MobileNetV2": {
-        'warmup_epochs': 10, 'warmup_lr': 0.001, 'warmup_opt': 'rmsprop',
-        'finetune_epochs': 25, 'finetune_lr': 5e-05, 'unfreeze_layers': 20,
-        'batch_size': 32, 'dropout': 0.0, 'dense_units': 320
-    },
-    "ResNet50": {
-        'warmup_epochs': 10, 'warmup_lr': 0.001, 'warmup_opt': 'adam',
-        'finetune_epochs': 25, 'finetune_lr': 1e-05, 'unfreeze_layers': 150,
-        'batch_size': 32, 'dropout': 0.3, 'dense_units': 256
-    },
     "VGG16": {
-        'warmup_epochs': 10, 'warmup_lr': 0.0001, 'warmup_opt': 'adam',
-        'finetune_epochs': 25, 'finetune_lr': 1e-05, 'unfreeze_layers': 15,
-        'batch_size': 32, 'dropout': 0.5, 'dense_units': 512
+        'warmup_epochs': 10, 
+        'warmup_lr': 0.0001, 
+        'warmup_opt': 'adam',
+        'finetune_epochs': 25, 
+        'finetune_lr': 1e-04,       # final
+        'unfreeze_layers': 8,       # vorher 12    max 19
+        'batch_size': 50,           # vorher 42 
+        'dropout': 0.3,             # final
+        'dense_units': 422          # final
     }
 }
 BASE_PARAMS = CONFIGS[CHOSEN_MODEL]
 
 # --- PARAMETER TESTS (Abweichungen von der Basis) ---
 SINGLE_PARAM_TESTS = {
-    'finetune_lr': [1e-6, 1e-4],      
-    'unfreeze_layers': [10, 40] if CHOSEN_MODEL == "MobileNetV2" else [50, 100],      
-    'dropout': [0.2, 0.5] if BASE_PARAMS['dropout'] == 0.0 else [0.0, 0.6],            
-    'dense_units': [128, 512],        
-    'batch_size': [16, 64]
+    # 'finetune_lr': [5e-3, 5e-4],      
+    'unfreeze_layers': [4, 6],     
+    # 'dropout': [0.2, 0.4],         
+    # 'dense_units': [400, 380],        
+    'batch_size': [60, 54],
 }
 
 COMBINATION_GROUPS = {
-    'Combo_Capacity': { 
-        'Increase (+)': { 'dense_units': 512, 'dropout': 0.5, 'unfreeze_layers': BASE_PARAMS['unfreeze_layers'] + 20 },
-        'Decrease (-)': { 'dense_units': 128, 'dropout': 0.0, 'unfreeze_layers': max(5, BASE_PARAMS['unfreeze_layers'] - 10) }
-    }
+    # 'Combo_Capacity': { 
+    #     'Increase (+)': { 'dense_units': 562, 
+    #                      'dropout': 0.5, 
+    #                      'unfreeze_layers': 18},
+    #     'Decrease (-)': { 'dense_units': 462, 
+    #                      'dropout': 0.3, 
+    #                      'unfreeze_layers': 12}
+    # }
 }
 
 # ==========================================
@@ -243,20 +241,41 @@ def create_confusion_matrices(results_list, category_name, save_folder):
         plt.close()
 
 def write_evaluation(results_list, category_name, save_folder, base_acc):
-    with open(os.path.join(save_folder, f'Evaluation_{category_name}.txt'), 'w') as f:
+    path = os.path.join(save_folder, f'Evaluation_{category_name}.txt')
+    
+    # FIX: Liste vorher sortieren, damit wir enumerate sauber nutzen können
+    sorted_res = sorted(results_list, key=lambda x: max(x['history']['val_accuracy']), reverse=True)
+    
+    with open(path, 'w') as f:
         f.write(f"=== AUSWERTUNG {CHOSEN_MODEL}: {category_name} ===\n\n")
         f.write(f"Basis-Modell Accuracy: {base_acc:.2%}\n")
         f.write("-" * 50 + "\n")
         
-        for idx, res in sorted(enumerate(results_list), key=lambda x: max(x[1]['history']['val_accuracy']), reverse=True):
-            res_data = res[1] 
-            best = max(res_data['history']['val_accuracy'])
+        for idx, res in enumerate(sorted_res):
+            # 'res' ist jetzt direkt das Dictionary
+            best = max(res['history']['val_accuracy'])
+            min_loss = min(res['history']['val_loss'])
             diff = best - base_acc
-            marker = " [REFERENZ]" if "Basis" in res_data['label'] else ""
             
-            f.write(f"{res_data['label']}{marker}\n")
+            marker = ""
+            if "Basis" in res['label']: marker = " [REFERENZ]"
+            elif diff > 0.005: marker = " [VERBESSERUNG]"
+            elif diff < -0.005: marker = " [VERSCHLECHTERUNG]"
+            
+            f.write(f"{idx+1}. {res['label']}{marker}\n")
             f.write(f"   - Beste Accuracy: {best:.2%}\n")
-            f.write(f"   - Differenz: {diff:+.2%}\n\n")
+            f.write(f"   - Differenz: {diff:+.2%}\n")
+            f.write(f"   - Bester Loss: {min_loss:.4f}\n")
+            
+            # Parameter Abweichungen anzeigen
+            if "Basis" not in res['label']:
+                f.write("   - Geänderte Parameter:\n")
+                # params ist ein Dictionary, wir vergleichen mit BASE_PARAMS
+                for k, v in res['params'].items():
+                    if k in BASE_PARAMS and BASE_PARAMS[k] != v:
+                         f.write(f"     * {k}: {v} (Basis: {BASE_PARAMS[k]})\n")
+            
+            f.write("\n")
 
 # ==========================================
 # --- MAIN LOOP ---
@@ -272,7 +291,7 @@ def run_full_experiment():
     print("\n--- BASIS MODELL (REFERENZ) ---")
     hist_base, model_base, val_gen_base = train_model(BASE_PARAMS, BASE_LOGS_DIR, "Base")
     
-    # HIER IST DIE ÄNDERUNG: Basis-Modell speichern
+    # Basis-Modell speichern
     model_base.save(os.path.join(BASE_MODELS_DIR, f"Base_Winner_{CHOSEN_MODEL}.keras"))
     
     val_gen_base.reset()
@@ -310,7 +329,7 @@ def run_full_experiment():
             
             hist, model, val_gen = train_model(new_params, curr_log_dir, label.replace('=', '_'))
             
-            # HIER IST DIE ÄNDERUNG: Test-Modell speichern
+            # Test-Modell speichern
             model.save(os.path.join(curr_model_dir, f"Model_{label.replace('=', '_')}.keras"))
             
             val_gen.reset()

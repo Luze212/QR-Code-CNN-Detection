@@ -1,0 +1,23 @@
+=== AUSWERTUNG ResNet50: finetune_lr ===
+
+Basis-Modell Accuracy: 88.67%
+--------------------------------------------------
+1. Basis (Winner) [REFERENZ]
+   - Beste Accuracy: 88.67%
+   - Differenz: +0.00%
+   - Bester Loss: 0.3821
+
+2. finetune_lr=1e-05 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 85.44%
+   - Differenz: -3.24%
+   - Bester Loss: 0.5813
+   - Geänderte Parameter:
+     * finetune_lr: 1e-05 (Basis: 0.0001)
+
+3. finetune_lr=0.001 [VERSCHLECHTERUNG]
+   - Beste Accuracy: 84.79%
+   - Differenz: -3.88%
+   - Bester Loss: 0.3674
+   - Geänderte Parameter:
+     * finetune_lr: 0.001 (Basis: 0.0001)
+
