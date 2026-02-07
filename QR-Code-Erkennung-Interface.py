@@ -22,10 +22,14 @@ from mpl_toolkits.mplot3d import Axes3D
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import load_img, img_to_array # type: ignore
 
+import cv2
+from ultralytics import YOLO
+
 # --- KONFIGURATION ---
 MODEL_DIRS = ["models", "models_tfl", "models_cnn"]
 IMG_SIZE = (224, 224)
 VALID_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+YOLO_QR_MODEL_PATH = os.path.join("models_yolo", "best.pt")
 
 # --- STYLESHEET ---
 STYLESHEET = """
@@ -181,29 +185,54 @@ class YoloWorker(QThread):
         # ]
         # ==============================================================================
         try:
-            self.progress.emit(10)
-            
-            # --- TODO: HIER CODE EINFÜGEN ---
-            # Beispiel:
-            # model = YOLO("best.pt")
-            # results = model.predict(self.image_path)
-            # boxes = parse_results(results)
-            
-            # Simuliere Ladezeit
-            self.msleep(800) 
-            self.progress.emit(50)
+            import os
 
-            # --- DUMMY DATEN (Zum Testen der GUI) ---
-            dummy_boxes = [
-                {'id': 1, 'x': 50, 'y': 50, 'w': 100, 'h': 100, 'confidence': 0.92},
-                {'id': 2, 'x': 200, 'y': 200, 'w': 80, 'h': 80, 'confidence': 0.65},
-                {'id': 3, 'x': 350, 'y': 100, 'w': 120, 'h': 120, 'confidence': 0.45}
-            ]
-            
-            self.progress.emit(100)
-            self.finished.emit(dummy_boxes)
+            print("=== YOLO DEBUG START ===")
+            print("MODEL PATH:", YOLO_QR_MODEL_PATH, "exists:", os.path.exists(YOLO_QR_MODEL_PATH))
+            print("IMAGE PATH:", self.image_path, "exists:", os.path.exists(self.image_path))
+
+            model = YOLO(YOLO_QR_MODEL_PATH)
+            print("MODEL NAMES:", model.names)
+
+            # WICHTIG: so wie CLI testen: niedriger conf + größere imgsz
+            res = model.predict(
+                source=self.image_path,
+                imgsz=960,
+                conf=0.10,
+                iou=0.45,
+                max_det=20,
+                verbose=True
+            )[0]
+
+            print("RAW boxes:", len(res.boxes))
+
+            boxes_out = []
+            for i, b in enumerate(res.boxes):
+                x1, y1, x2, y2 = b.xyxy[0].tolist()
+                x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
+
+                boxes_out.append({
+                    "id": i + 1,
+                    "x": x1,
+                    "y": y1,
+                    "w": max(1, x2 - x1),
+                    "h": max(1, y2 - y1),
+                    "confidence": float(b.conf[0].item()) if b.conf is not None else 0.0
+                })
+
+            print("OUT boxes:", len(boxes_out))
+            if boxes_out:
+                print("BOX[0]:", boxes_out[0])
+            print("=== YOLO DEBUG END ===")
+
+            self.finished.emit(boxes_out)
+
         except Exception as e:
-            self.error.emit(str(e))
+            # falls deine Klasse error signal hat:
+            # self.error.emit(str(e))
+            print("YOLO ERROR:", e)
+            self.finished.emit([])
+
 
 # 3. READER WORKER
 class ReaderWorker(QThread):
@@ -244,23 +273,126 @@ class ReaderWorker(QThread):
         # ]
         # ==============================================================================
         try:
-            results = []
-            
-            # --- TODO: HIER CODE EINFÜGEN ---
-            # image = cv2.imread(self.image_path)
-            # for box in self.boxes:
-            #     roi = image[box['y']:box['y']+box['h'], box['x']:box['x']+box['w']]
-            #     text_pyzbar = read_pyzbar(roi)
-            #     results.append(...)
-            
-            # --- DUMMY DATEN ---
+            results = []  # IMMER neu, damit pro Klick nicht kumuliert
+
+            def _clip_int(v, lo, hi):
+                try:
+                    v = int(round(float(v)))
+                except Exception:
+                    v = int(lo)
+                return max(int(lo), min(v, int(hi)))
+
+            def _preprocess_variants(roi_bgr):
+                """Erzeugt mehrere robuste Varianten des ROI für besseres Decoding."""
+                gray = cv2.cvtColor(roi_bgr, cv2.COLOR_BGR2GRAY)
+
+                # Entrauschen
+                den = cv2.fastNlMeansDenoising(gray, None, h=10, templateWindowSize=7, searchWindowSize=21)
+
+                # Kontrast (CLAHE)
+                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+                eq = clahe.apply(den)
+
+                # Threshold-Varianten
+                thr_adapt = cv2.adaptiveThreshold(
+                    eq, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2
+                )
+                _, thr_otsu = cv2.threshold(eq, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+                # leichtes Schärfen
+                kernel = np.array(
+                    [[0, -1, 0],
+                    [-1, 5, -1],
+                    [0, -1, 0]],
+                    dtype=np.float32
+                )
+                sharp = cv2.filter2D(eq, -1, kernel)
+
+                return [roi_bgr, eq, thr_adapt, thr_otsu, sharp]
+
+            def _decode_opencv(img_variant):
+                qrd = cv2.QRCodeDetector()
+                data, points, _ = qrd.detectAndDecode(img_variant)
+                if data is None:
+                    data = ""
+                data = data.strip()
+                return (len(data) > 0), data
+
+            # Optional: pyzbar nur wenn installiert
+            try:
+                from pyzbar.pyzbar import decode as pyzbar_decode
+                _pyzbar_ok = True
+            except Exception:
+                _pyzbar_ok = False
+                pyzbar_decode = None
+            print("PYZBAR AVAILABLE:", _pyzbar_ok)
+
+            def _decode_pyzbar(img_variant):
+                if not _pyzbar_ok:
+                    return False, ""
+                decoded = pyzbar_decode(img_variant)
+                if not decoded:
+                    return False, ""
+                try:
+                    content = decoded[0].data.decode("utf-8", errors="ignore").strip()
+                except Exception:
+                    content = str(decoded[0].data).strip()
+                return (len(content) > 0), content
+
+            image = cv2.imread(self.image_path)
+            if image is None:
+                raise RuntimeError(f"Bild konnte nicht geladen werden: {self.image_path}")
+
+            H, W = image.shape[:2]
+
             for box in self.boxes:
-                results.append({'reader': 'Pyzbar', 'code_id': box['id'], 'success': True, 'content': f"Daten ID {box['id']}"})
-                results.append({'reader': 'OpenCV', 'code_id': box['id'], 'success': False, 'content': ""})
-                
+                code_id = int(box.get("id", 0))
+
+                x = _clip_int(box.get("x", 0), 0, W - 1)
+                y = _clip_int(box.get("y", 0), 0, H - 1)
+                w = _clip_int(box.get("w", 1), 1, W)
+                h = _clip_int(box.get("h", 1), 1, H)
+
+                # Padding, falls Box knapp ist
+                pad = int(0.08 * max(w, h))
+                x0 = _clip_int(x - pad, 0, W - 1)
+                y0 = _clip_int(y - pad, 0, H - 1)
+                x1 = _clip_int(x + w + pad, 0, W)
+                y1 = _clip_int(y + h + pad, 0, H)
+
+                # ROI ungültig -> trotzdem 2 Einträge (OpenCV + Pyzbar)
+                if x1 <= x0 or y1 <= y0:
+                    results.append({"reader": "OpenCV", "code_id": code_id, "success": False, "content": ""})
+                    results.append({"reader": "Pyzbar", "code_id": code_id, "success": False, "content": ""})
+                    continue
+
+                roi = image[y0:y1, x0:x1].copy()
+                variants = _preprocess_variants(roi)
+
+                # --- OpenCV: über Varianten probieren ---
+                ok_cv, content_cv = False, ""
+                for v in variants:
+                    ok_cv, content_cv = _decode_opencv(v)
+                    if ok_cv:
+                        break
+                results.append({"reader": "OpenCV", "code_id": code_id, "success": ok_cv, "content": content_cv})
+
+                # --- Pyzbar: immer 1 Eintrag pro Code, auch wenn nicht verfügbar ---
+                if _pyzbar_ok:
+                    ok_pz, content_pz = False, ""
+                    for v in variants:
+                        ok_pz, content_pz = _decode_pyzbar(v)
+                        if ok_pz:
+                            break
+                    results.append({"reader": "Pyzbar", "code_id": code_id, "success": ok_pz, "content": content_pz})
+                else:
+                    results.append({"reader": "Pyzbar", "code_id": code_id, "success": False, "content": ""})
+
             self.finished.emit(results)
+
         except Exception as e:
             self.error.emit(str(e))
+
 
 # 4. ANGLE WORKER
 class AngleWorker(QThread):
@@ -727,11 +859,24 @@ class MainWindow(QMainWindow):
 
     def on_yolo_finished(self, boxes):
         path = self.image_paths[self.current_index]
-        self.yolo_boxes[path] = boxes
+        self.yolo_boxes[path] = self._filter_boxes_by_min_conf(boxes)  # Änderung: Conv. Wert speichern für Code lesen
         self.btn_yolo.setEnabled(True); self.btn_yolo.setText("QR-CODES ORTEN")
         self.prog_yolo.setVisible(False)
         self.update_image_view()
         self.setFocus()
+    
+    # Liefert den aktuellen Min-Konfidenz-Schwellenwert für YOLO
+    def _get_min_conf_value(self) -> float:     # Änderung: Conv. Wert speichern für Code lesen. Ganze Funktion
+        try:
+            return float(self.slider_yolo.value()) / 100.0
+        except Exception:
+            return 0.0
+
+    # Filtert eine Box-Liste so, dass nur Boxen übrig bleiben, die auch bei der aktuellen Slider-Einstellung gezeichnet werden würden.
+    def _filter_boxes_by_min_conf(self, boxes):     # Änderung: Conv. Wert speichern für Code lesen. Ganze Funktion
+        boxes = boxes or []
+        thresh = self._get_min_conf_value()
+        return [b for b in boxes if float(b.get("confidence", 0.0)) >= thresh]
 
     # --- READER START ---
     def start_reading(self):
@@ -740,9 +885,17 @@ class MainWindow(QMainWindow):
         if path not in self.yolo_boxes or not self.yolo_boxes[path]:
             self.txt_content.setText("FEHLER: Bitte erst QR-Codes orten (YOLO)!")
             return
+        
         self.btn_read.setEnabled(False); self.btn_read.setText("LESE...")
         self.list_reader.clear()
-        self.reader_worker = ReaderWorker(path, self.yolo_boxes[path])
+
+        boxes_to_read = self._filter_boxes_by_min_conf(self.yolo_boxes.get(path, []))                   # Dieser Block durch 
+        if not boxes_to_read:                                                                           # self.reader_worker = ReaderWorker(path, self.yolo_boxes[path])
+            self.txt_content.setText("Keine QR-Boxen über der Min.-Konfidenz. Slider ggf. senken.")     #
+            self.btn_read.setEnabled(True); self.btn_read.setText("INHALT LESEN")                       # ersetzt
+            return                                                                                      #
+
+        self.reader_worker = ReaderWorker(path, boxes_to_read)                                          # Ebenfalls aus dem Block
         self.reader_worker.finished.connect(self.on_read_finished)
         self.reader_worker.start()
 
