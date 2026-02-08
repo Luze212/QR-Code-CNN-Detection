@@ -759,8 +759,6 @@ class MainWindow(QMainWindow):
 
     def draw_overlays(self, pixmap, boxes, original_size):
         painter = QPainter(pixmap)
-        pen = QPen(QColor("#00ff00")); pen.setWidth(3)
-        painter.setPen(pen)
         painter.setFont(QFont("Arial", 10, QFont.Weight.Bold))
 
         scale_x = pixmap.width() / original_size.width()
@@ -775,6 +773,19 @@ class MainWindow(QMainWindow):
                 ids.append(str(box['id']))
                 x = int(box['x'] * scale_x); y = int(box['y'] * scale_y)
                 w = int(box['w'] * scale_x); h = int(box['h'] * scale_y)
+
+                # --- NEU: Farbe abhängig von Lesbarkeit (gesetzt nach "INHALT LESEN") ---
+                readable = box.get("readable", None)
+                if readable is True:
+                    pen = QPen(QColor("#00ff00"))  # grün
+                elif readable is False:
+                    pen = QPen(QColor("#ff0000"))  # rot
+                else:
+                    pen = QPen(QColor("#00ff00"))  # default (noch nicht gelesen)
+
+                pen.setWidth(3)
+                painter.setPen(pen)
+
                 painter.drawRect(x, y, w, h)
                 painter.fillRect(x, y - 20, 100, 20, QColor(0,0,0, 150))
                 painter.drawText(x + 5, y - 5, f"#{box['id']} ({box['confidence']:.2f})")
@@ -901,11 +912,28 @@ class MainWindow(QMainWindow):
 
     def on_read_finished(self, results):
         self.btn_read.setEnabled(True); self.btn_read.setText("INHALT LESEN")
+
+        # --- NEU: pro code_id merken, ob er von irgendeinem Reader lesbar war ---
+        readable_by_id = {}
+        for res in results:
+            cid = int(res.get("code_id", -1))
+            ok = bool(res.get("success", False))
+            readable_by_id[cid] = readable_by_id.get(cid, False) or ok
+
+        # --- NEU: Lesbarkeit in die gespeicherten YOLO-Boxen für das aktuelle Bild schreiben ---
+        path = self.image_paths[self.current_index]
+        boxes = self.yolo_boxes.get(path, [])
+        for b in boxes:
+            bid = int(b.get("id", -1))
+            if bid in readable_by_id:
+                b["readable"] = readable_by_id[bid]
+        
         for res in results:
             icon = "✅" if res['success'] else "❌"
             item = QListWidgetItem(f"{icon} {res['reader']} (ID: #{res['code_id']})")
             item.setData(Qt.ItemDataRole.UserRole, res['content'])
             self.list_reader.addItem(item)
+        self.update_image_view()  # --- NEU: neu zeichnen, damit Rahmenfarben aktualisiert werden
         self.setFocus()
 
     def show_reader_content(self, item):
