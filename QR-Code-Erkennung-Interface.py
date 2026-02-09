@@ -320,26 +320,32 @@ class ReaderWorker(QThread):
                 data = data.strip()
                 return (len(data) > 0), data
 
-            # Optional: pyzbar nur wenn installiert
+            # Optional: ZXing-cpp nur wenn installiert
             try:
-                from pyzbar.pyzbar import decode as pyzbar_decode
-                _pyzbar_ok = True
+                import zxingcpp
+                _zxing_ok = True
             except Exception:
-                _pyzbar_ok = False
-                pyzbar_decode = None
-            print("PYZBAR AVAILABLE:", _pyzbar_ok)
+                zxingcpp = None
+                _zxing_ok = False
+            print("ZXING AVAILABLE:", _zxing_ok)
 
-            def _decode_pyzbar(img_variant):
-                if not _pyzbar_ok:
+            def _decode_zxing(img_variant):
+                if not _zxing_ok:
                     return False, ""
-                decoded = pyzbar_decode(img_variant)
-                if not decoded:
-                    return False, ""
+
+                # ZXing akzeptiert i.d.R. numpy arrays (OpenCV-Images). :contentReference[oaicite:2]{index=2}
                 try:
-                    content = decoded[0].data.decode("utf-8", errors="ignore").strip()
+                    barcodes = zxingcpp.read_barcodes(img_variant)
                 except Exception:
-                    content = str(decoded[0].data).strip()
+                    # manchmal hilft contiguous memory
+                    barcodes = zxingcpp.read_barcodes(np.ascontiguousarray(img_variant))
+
+                if not barcodes:
+                    return False, ""
+
+                content = (barcodes[0].text or "").strip()
                 return (len(content) > 0), content
+
 
             image = cv2.imread(self.image_path)
             if image is None:
@@ -365,7 +371,7 @@ class ReaderWorker(QThread):
                 # ROI ungültig -> trotzdem 2 Einträge (OpenCV + Pyzbar)
                 if x1 <= x0 or y1 <= y0:
                     results.append({"reader": "OpenCV", "code_id": code_id, "success": False, "content": ""})
-                    results.append({"reader": "Pyzbar", "code_id": code_id, "success": False, "content": ""})
+                    results.append({"reader": "ZXing", "code_id": code_id, "success": False, "content": ""})
                     continue
 
                 roi = image[y0:y1, x0:x1].copy()
@@ -379,16 +385,16 @@ class ReaderWorker(QThread):
                         break
                 results.append({"reader": "OpenCV", "code_id": code_id, "success": ok_cv, "content": content_cv})
 
-                # --- Pyzbar: immer 1 Eintrag pro Code, auch wenn nicht verfügbar ---
-                if _pyzbar_ok:
-                    ok_pz, content_pz = False, ""
+                # --- ZXing: immer 1 Eintrag pro Code, auch wenn nicht verfügbar ---
+                if _zxing_ok:
+                    ok_zx, content_zx = False, ""
                     for v in variants:
-                        ok_pz, content_pz = _decode_pyzbar(v)
-                        if ok_pz:
+                        ok_zx, content_zx = _decode_zxing(v)
+                        if ok_zx:
                             break
-                    results.append({"reader": "Pyzbar", "code_id": code_id, "success": ok_pz, "content": content_pz})
+                    results.append({"reader": "ZXing", "code_id": code_id, "success": ok_zx, "content": content_zx})
                 else:
-                    results.append({"reader": "Pyzbar", "code_id": code_id, "success": False, "content": ""})
+                    results.append({"reader": "ZXing", "code_id": code_id, "success": False, "content": ""})
 
             self.finished.emit(results)
 
