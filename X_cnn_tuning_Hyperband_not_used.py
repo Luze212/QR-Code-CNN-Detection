@@ -7,14 +7,15 @@ import matplotlib.pyplot as plt
 import os
 
 # --- KONFIGURATION ---
-BASE_DIR = 'dataset_final_boxes' # Dataset
-TUNED_DIR = 'models'      # Zielordner für Ergebnisse
-LOG_DIR = 'logs/tuned_cnn_Hyperband_2_256,256'  # Log-Ordner
+BASE_DIR = 'dataset_final_boxes'
+TUNED_DIR = 'models'
+LOG_DIR = 'logs/tuned_cnn_Hyperband_2_256,256'
 IMG_SIZE = (256, 256)
-MAX_EPOCHS_TUNING = 15          # Epochen Hyperparameter-Tuning
-MAX_EPOCHS_FINAL = 30           # Epochen finale Model´ß
+MAX_EPOCHS_TUNING = 15 
+MAX_EPOCHS_FINAL = 30 
 project='tuning_Hyperband_2_256,256'
-PLOT_TITEL = 'Hyperband'    # Titel für den Plot
+PLOT_TITEL = 'Hyperband'
+
 # Ordner erstellen
 os.makedirs(TUNED_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -114,7 +115,7 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     # Bestwert ermitteln für den Titel
     best_val_acc = max(val_acc)
 
-    # Plot erstellen (Gleiche Größe wie dein Referenz-Plot)
+    # Plot erstellen
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     
     # --- Linke Seite: Accuracy ---
@@ -128,7 +129,6 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     ax1.grid(True, which='both', linestyle='--', alpha=0.7)
     
     # --- Rechte Seite: Loss ---
-    # Hier nutzen wir Rot/Orange für bessere Unterscheidung
     ax2.plot(epochs, loss, label='Training Loss', linewidth=2, color='red')
     ax2.plot(epochs, val_loss, label='Validation Loss', linewidth=2, color='orange')
     ax2.set_title(f'{title_prefix}: Loss', fontsize=14)
@@ -143,7 +143,7 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     # Pfad zusammenbauen
     plot_path = os.path.join(folder, f'{filename_prefix}_plot.png')
     
-    # Speichern mit hoher Auflösung (300 DPI)
+    # Speichern
     plt.savefig(plot_path, dpi=300)
     plt.close()
 

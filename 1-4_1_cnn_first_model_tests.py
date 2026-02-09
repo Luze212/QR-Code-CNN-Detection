@@ -8,11 +8,11 @@ import os
 import gc
 
 # --- KONFIGURATION ---
-BASE_DIR = 'dataset_final_boxes'   # Dein Dataset Ordner
-LOG_DIR = 'logs/first_argum_test' # Hierhin kommen die CSVs und Plots
-MODEL_DIR = 'models'              # Hierhin kommen die .keras Dateien
+BASE_DIR = 'dataset_final_boxes' 
+LOG_DIR = 'logs/first_argum_test'
+MODEL_DIR = 'models'
 
-IMG_SIZE = (256, 256)             # Standardgröße
+IMG_SIZE = (256, 256)
 BATCH_SIZE = 32
 EPOCHS = 30
 
@@ -76,7 +76,6 @@ def main():
     )
     val_datagen = ImageDataGenerator(rescale=1./255)
 
-    # HIER WAR DER FEHLER: verbose entfernt!
     train_gen = train_datagen.flow_from_directory(
         os.path.join(BASE_DIR, 'train'),
         target_size=IMG_SIZE, batch_size=BATCH_SIZE,
@@ -95,7 +94,6 @@ def main():
         print(f"\n[{i+1}/{len(scenarios)}] Trainiere Modell: {name}")
         print(f"   Einstellungen: LR={params['lr']}, Filters={params['filters']}, Drop={params['dropout']}")
         
-        # Sauber machen
         tf.keras.backend.clear_session()
         gc.collect()
 
@@ -139,7 +137,7 @@ def main():
 
     # --- ZUSAMMENFASSUNG ---
     print("\n" + "="*50)
-    print("🏆 ERGEBNISSE VERGLEICH")
+    print("ERGEBNISSE VERGLEICH")
     print("="*50)
     df = pd.DataFrame(results).sort_values(by="Val Accuracy", ascending=False)
     print(df.to_string(index=False))

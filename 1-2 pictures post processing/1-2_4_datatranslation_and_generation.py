@@ -16,7 +16,7 @@ SEED = 42
 # --- Ordner erstellen ---
 def setup_directories():
     if os.path.exists(TARGET_DIR):
-        shutil.rmtree(TARGET_DIR) # Alten Ordner löschen für sauberen Start
+        shutil.rmtree(TARGET_DIR)
     for split in ['train', 'val']:
         for cls in ['qr_code', 'no_qr_code']:
             os.makedirs(os.path.join(TARGET_DIR, split, cls), exist_ok=True)
@@ -44,7 +44,6 @@ def parse_polygons(txt_path, w, h):
 def create_background_crop(img, polygons, filename, save_dir):
     """Erzeugt ein Bild OHNE QR-Code aus dem Hintergrund."""
     h, w, _ = img.shape
-    # Maske: Weiß wo QR-Code ist, Schwarz wo Hintergrund ist
     mask = np.zeros((h, w), dtype=np.uint8)
     cv2.fillPoly(mask, polygons, 255)
     

@@ -30,41 +30,40 @@ EXPERIMENT_NAME = "Bayesian_1_CapacetyCombincrease-2"
 IMG_SIZE = (256, 256)
 INPUT_SHAPE = IMG_SIZE + (3,)
 
-# --- 1. BASIS-WERTE (Deine korrekten Bayesian_1 Werte) ---
+# --- 1. BASIS-WERTE (Bayesian_1) ---
 BASE_PARAMS = {
     'epochs': 30,                       
     'batch_size': 16,                   
     'learning_rate': 0.00022659,       
     'optimizer': 'adam',                
-    'activation': 'relu',           # Final               
+    'activation': 'relu',               
     'dropout': 0.2,  
-    'dense_units': 420,             # Von 380          
-    'conv_blocks': 7,               # Von 5
-    'start_filters': 44,            # Von 38
-    'batch_norm': True,             # Final                 
+    'dense_units': 420,             
+    'conv_blocks': 7,         
+    'start_filters': 44,         
+    'batch_norm': True,                       
     'loss': 'binary_crossentropy'
 }
 
 # --- 2. EINZEL-PARAMETER TESTS ---
-# Angepasst an deine Basis (Batchsize 16 -> Teste 12, 24 etc.)
 SINGLE_PARAM_TESTS = {
     'batch_size': [12, 24],              
     'learning_rate': [0.00002, 0.002],  
     'dropout': [0.1, 0.3], 
     'dense_units': [440, 400],          
     'conv_blocks': [6, 8],              
-    # 'batch_norm': [False],
+    'batch_norm': [False],
     'start_filters': [34, 42],              
     'optimizer': ['rmsprop'],    
-    # 'activation': ['elu', 'tanh']       
+    'activation': ['elu', 'tanh']       
 }
 
 # --- 3. KOMBINATIONS-TESTS ---
 COMBINATION_GROUPS = {
-    #'Combo_Capacity': {
-    #    'Increase (+)': { 'dense_units': 450, 'conv_blocks': 9, 'start_filters': 44, 'dropout': 0.2 },
-    #    'Increase 2 (+)': { 'dense_units': 480, 'conv_blocks': 12, 'start_filters': 38, 'dropout': 0.2 }
-    #}
+    'Combo_Capacity': {
+       'Increase (+)': { 'dense_units': 450, 'conv_blocks': 9, 'start_filters': 44, 'dropout': 0.2 },
+       'Increase 2 (+)': { 'dense_units': 480, 'conv_blocks': 12, 'start_filters': 38, 'dropout': 0.2 }
+    }
 }
 
 # ==========================================
@@ -377,9 +376,7 @@ def run_full_experiment():
             
             hist = model.fit(t_gen, epochs=new_params['epochs'], validation_data=v_gen, callbacks=callbacks, verbose=1)
             
-            # --- HIER IST DIE ÄNDERUNG: Modell speichern ---
             model.save(os.path.join(current_model_dir, f"Model_{label.replace('=', '_')}.keras"))
-            # -----------------------------------------------
 
             print("      Generiere Vorhersagen...")
             v_gen.reset()

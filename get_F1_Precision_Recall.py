@@ -11,16 +11,16 @@ from sklearn.metrics import classification_report, confusion_matrix
 # 1. KONFIGURATION (HIER ANPASSEN)
 # ==========================================
 
-# A) Eingabe: Wo liegt dein Modell und die Testdaten?
-MODEL_ORDNER    = "Pfad/zu/deinem/Modellordner"    # z.B. "./models"
-MODEL_NAME      = "mein_fertiges_modell.h5"        # Dateiname
-TEST_DATEN_PFAD = "Pfad/zu/den/Testdaten"          # Unterordner pro Klasse beachten!
+# A) Eingabe:
+MODEL_ORDNER    = "Pfad/zu/deinem/Modellordner"   
+MODEL_NAME      = "mein_fertiges_modell.h5"   
+TEST_DATEN_PFAD = "Pfad/zu/den/Testdaten"      
 
-# B) Ausgabe: Wo soll die CSV-Datei hin?
-ERGEBNIS_ORDNER = "Pfad/zu/den/Ergebnissen"        # z.B. "./evaluation"
-CSV_DATEINAME   = "modell_evaluation.csv"          # Name der CSV-Datei
+# B) Ausgabe:
+ERGEBNIS_ORDNER = "Pfad/zu/den/Ergebnissen"      
+CSV_DATEINAME   = "modell_evaluation.csv"     
 
-# C) Bildgröße (MUSS exakt so sein wie beim Training!)
+# C) Bildgröße
 IMG_HEIGHT = 256    # ftl: 224
 IMG_WIDTH  = 256    # ftl: 224
 
@@ -40,8 +40,7 @@ else:
     # ==========================================
     # 3. TESTDATEN VORBEREITEN
     # ==========================================
-    
-    # Nur Rescaling, keine Augmentation für den Test!
+
     test_datagen = ImageDataGenerator(rescale=1./255)
 
     print("Lade Testdaten...")
@@ -50,7 +49,7 @@ else:
         target_size=(IMG_HEIGHT, IMG_WIDTH),
         batch_size=32,
         class_mode='categorical',
-        shuffle=False  # WICHTIG: Nicht mischen!
+        shuffle=False  
     )
 
     # ==========================================
@@ -67,10 +66,8 @@ else:
     # 5. METRIKEN BERECHNEN & CSV SPEICHERN
     # ==========================================
 
-    # Report als Dictionary holen (für die Weiterverarbeitung)
     report_dict = classification_report(y_true, y_pred, target_names=class_labels, output_dict=True)
     
-    # Report als Text für die Konsole
     report_text = classification_report(y_true, y_pred, target_names=class_labels)
 
     print("\n------------------------------------------------------")
@@ -78,7 +75,6 @@ else:
     print("------------------------------------------------------")
     print(report_text)
 
-    # In DataFrame umwandeln
     df_results = pd.DataFrame(report_dict).transpose()
 
     # Speicherordner erstellen, falls nicht vorhanden

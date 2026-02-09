@@ -9,37 +9,37 @@ import numpy as np
 import random
 
 # --- REPRODUZIERBARKEIT ---
-# Damit das Ergebnis nicht durch Zufall schlechter wird (z.B. 86% statt 88%)
+# Zufall einschränken für vergleichbarkeit
 seed = 42
 np.random.seed(seed)
 tf.random.set_seed(seed)
 random.seed(seed)
 
 # --- PFAD KONFIGURATION ---
-BASE_DIR = 'dataset_final_boxes' # Dataset
+BASE_DIR = 'dataset_final_boxes'
 MODELS_DIR = 'models'
-LOGS_DIR = 'logs/1-4 CNN Logs/4 Final Startpoint/' # Speicherort anpassen
+LOGS_DIR = 'logs/1-4 CNN Logs/4 Final Startpoint/' 
 MODUL_NAME = 'Final_Bayesian_1_Best_Model'
 
 # Ordner erstellen
 os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(LOGS_DIR, exist_ok=True)
 
-# --- FINALE HYPERPARAMETER (Dein Bayesian_1 Gewinner) ---
+# --- FINALE HYPERPARAMETER (Bayesian_1) ---
 TUNING_CONFIG = {
     "start_filters": 32,
     "num_blocks": 4,
     "batch_norm": True,
     "dense_units": 320,
     "dropout": 0.0,
-    "learning_rate": 0.00022659388397303692, # Exakter Wert
+    "learning_rate": 0.00022659388397303692,
     "batch_size": 16,
     "l2_rate": 0.0,
     "img_size": (256, 256)
 }
 
 # Training Einstellungen
-EPOCHS = 35 # Etwas mehr als im Tuner (20), mit Early Stopping
+EPOCHS = 35
 
 # --- DATEN-AUGMENTATION ---
 def get_data_generators(batch_size):
@@ -74,7 +74,7 @@ def get_data_generators(batch_size):
     )
     return train_gen, val_gen
 
-# --- MODELLBAU (Identisch zum Tuner 1-4_2) ---
+# --- MODELLBAU ---
 def build_dynamic_model(config):
     model = models.Sequential()
     model.add(layers.Input(shape=config['img_size'] + (3,)))
@@ -98,7 +98,7 @@ def build_dynamic_model(config):
         # 2. Pooling
         model.add(layers.MaxPooling2D((2, 2)))
         
-        # 3. Batch Normalization (Struktur wie im Tuner Skript)
+        # 3. Batch Normalization
         if config['batch_norm']:
             model.add(layers.BatchNormalization())
         
@@ -174,7 +174,6 @@ def main():
     model_save_path = os.path.join(MODELS_DIR, model_name)
     log_save_path = os.path.join(LOGS_DIR, 'training_log.csv')
     
-    # HIER ist die Korrektur: ReduceLROnPlateau hinzugefügt!
     callbacks = [
         CSVLogger(log_save_path),
         ModelCheckpoint(model_save_path, monitor='val_accuracy', save_best_only=True, verbose=1),

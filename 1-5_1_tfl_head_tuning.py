@@ -22,7 +22,7 @@ DATASET_DIR = 'dataset_final_boxes'
 
 IMG_SIZE = (224, 224) 
 BATCH_SIZE = 32
-EPOCHS_PER_TRIAL = 12 # Etwas länger, da Augmentation das Lernen verlangsamt
+EPOCHS_PER_TRIAL = 12 
 
 # ==========================================
 # --- 2. AUGMENTATION (DEINE FESTEN WERTE) ---
@@ -44,7 +44,6 @@ def get_base_model(name, input_shape):
     elif name == "ResNet50": return ResNet50(input_shape=input_shape, include_top=False, weights='imagenet')
 
 def get_generators():
-    # Hier wird die Augmentation angewendet
     train_datagen = ImageDataGenerator(**AUGMENTATION_CONFIG)
     val_datagen = ImageDataGenerator(rescale=1./255)
 
@@ -70,7 +69,7 @@ def build_model(hp):
     input_shape = IMG_SIZE + (3,)
     base_model = get_base_model(CHOSEN_MODEL, input_shape)
     
-    # BASIS EINFRIEREN (Wir tunen nur den Kopf!)
+    # BASIS EINFRIEREN
     base_model.trainable = False 
 
     model = models.Sequential()
@@ -78,11 +77,9 @@ def build_model(hp):
     model.add(layers.GlobalAveragePooling2D())
     
     # --- SEARCH SPACE: ARCHITEKTUR ---
-    # Wie viele Neuronen brauchen wir für die augmentierten Daten?
     hp_units = hp.Int('dense_units', min_value=128, max_value=512, step=64)
     model.add(layers.Dense(units=hp_units, activation='relu'))
-    
-    # Wie viel Dropout ist bei dieser Augmentation noch nötig?
+
     hp_dropout = hp.Float('dropout', min_value=0.0, max_value=0.6, step=0.1)
     model.add(layers.Dropout(rate=hp_dropout))
     

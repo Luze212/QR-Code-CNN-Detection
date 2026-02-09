@@ -23,7 +23,6 @@ random.seed(seed)
 # ==========================================
 # --- KONFIGURATION ---
 # ==========================================
-# HIER WÄHLEN: Welches Modell soll getestet werden?
 CHOSEN_MODEL = "MobileNetV2" 
 
 BASE_MODELS_DIR = f'models/TFL_second_optimitzation_{CHOSEN_MODEL}'
@@ -39,33 +38,33 @@ CONFIGS = {
         'warmup_lr': 0.001, 
         'warmup_opt': 'rmsprop',
         'finetune_epochs': 25,  
-        'finetune_lr': 5e-04,       # vorher 1e-04  final
-        'unfreeze_layers': 40,      # vorher 25      #max 154
-        'batch_size': 34,           # vorher 38     final 
-        'dropout': 0.2,             # vorher 0.3    final
-        'dense_units': 220          # vorher 260
+        'finetune_lr': 5e-04,    
+        'unfreeze_layers': 40,    
+        'batch_size': 34,     
+        'dropout': 0.2,            
+        'dense_units': 220       
     },
 }
 BASE_PARAMS = CONFIGS[CHOSEN_MODEL]
 
-# --- PARAMETER TESTS (Abweichungen von der Basis) ---
+# --- PARAMETER TESTS ---
 SINGLE_PARAM_TESTS = {
-    # 'finetune_lr': [5e-3, 5e-4],      
+    'finetune_lr': [5e-3, 5e-4],      
     'unfreeze_layers': [35, 45],     
-    # 'dropout': [0.2, 0.4],         
+    'dropout': [0.2, 0.4],         
     'dense_units': [200, 240],        
-    # 'batch_size': [34, 42],
+    'batch_size': [34, 42],
 }
 
 COMBINATION_GROUPS = {
-    #'Combo_Capacity': { 
-    #    'Increase (+)': { 'dense_units': 380, 
-    #                     'dropout': 0.3, 
-    #                     'unfreeze_layers': 30},
-    #    'Decrease (-)': { 'dense_units': 260, 
-    #                     'dropout': 0.1, 
-    #                     'unfreeze_layers': 15}
-    #}
+    'Combo_Capacity': { 
+        'Increase (+)': { 'dense_units': 380, 
+                          'dropout': 0.3, 
+                          'unfreeze_layers': 30},
+        'Decrease (-)': { 'dense_units': 260, 
+                          'dropout': 0.1, 
+                          'unfreeze_layers': 15}
+    }
 }
 
 # ==========================================
@@ -243,7 +242,6 @@ def create_confusion_matrices(results_list, category_name, save_folder):
 def write_evaluation(results_list, category_name, save_folder, base_acc):
     path = os.path.join(save_folder, f'Evaluation_{category_name}.txt')
     
-    # FIX: Liste vorher sortieren, damit wir enumerate sauber nutzen können
     sorted_res = sorted(results_list, key=lambda x: max(x['history']['val_accuracy']), reverse=True)
     
     with open(path, 'w') as f:
@@ -252,7 +250,6 @@ def write_evaluation(results_list, category_name, save_folder, base_acc):
         f.write("-" * 50 + "\n")
         
         for idx, res in enumerate(sorted_res):
-            # 'res' ist jetzt direkt das Dictionary
             best = max(res['history']['val_accuracy'])
             min_loss = min(res['history']['val_loss'])
             diff = best - base_acc
@@ -270,7 +267,6 @@ def write_evaluation(results_list, category_name, save_folder, base_acc):
             # Parameter Abweichungen anzeigen
             if "Basis" not in res['label']:
                 f.write("   - Geänderte Parameter:\n")
-                # params ist ein Dictionary, wir vergleichen mit BASE_PARAMS
                 for k, v in res['params'].items():
                     if k in BASE_PARAMS and BASE_PARAMS[k] != v:
                          f.write(f"     * {k}: {v} (Basis: {BASE_PARAMS[k]})\n")
@@ -312,7 +308,7 @@ def run_full_experiment():
     for cat_name, items in all_tests.items():
         print(f"\n>>> Kategorie: {cat_name}")
         curr_log_dir = os.path.join(BASE_LOGS_DIR, cat_name)
-        curr_model_dir = os.path.join(BASE_MODELS_DIR, cat_name) # Ordner für Modelle
+        curr_model_dir = os.path.join(BASE_MODELS_DIR, cat_name) 
         os.makedirs(curr_log_dir, exist_ok=True)
         os.makedirs(curr_model_dir, exist_ok=True)
         

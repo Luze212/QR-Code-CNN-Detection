@@ -1,0 +1,3 @@
+Modell,Accuracy,F1-Score,True Pos (QR gefunden),False Pos (Fehlalarm),True Neg (Korrekt ignoriert),False Neg (QR übersehen),Input Size
+Final_model_ResNet50,0.8964,0.9355,232,14,45,18,"(224, 224)"
+Base_Winner_ResNet50,0.8285,0.8925,220,23,36,30,"(224, 224)"

@@ -361,7 +361,7 @@ class MainWindow(QMainWindow):
 
         self.sep(layout)
 
-        # 5. READER (Platzhalter für YOLO/OpenCV)
+        # 5. READER
         btn_read = QPushButton("QR-Code erkennen und lesen")
         btn_read.setMinimumHeight(30)
         btn_read.clicked.connect(self.run_yolo_detect_only)
@@ -394,7 +394,7 @@ class MainWindow(QMainWindow):
         line.setStyleSheet("background-color: #3e3e3e;")
         layout.addWidget(line)
 
-    # --- SLIDER LOGIK (Mit Live-Update) ---
+    # --- SLIDER LOGIK ---
     def on_slider_change(self, val):
         self.sync_input(val)
         self.apply_visuals()
@@ -432,7 +432,7 @@ class MainWindow(QMainWindow):
         if f:
             self.image_list = [f]
             self.current_img_idx = 0
-            self.model_scores = {} # Cache leeren bei neuem Laden
+            self.model_scores = {}
             self.update_image_display()
 
     def browse_folder(self):
@@ -447,7 +447,7 @@ class MainWindow(QMainWindow):
         if found:
             self.image_list = sorted(found)
             self.current_img_idx = 0
-            self.model_scores = {} # Cache leeren
+            self.model_scores = {}
             self.update_image_display()
         else:
             self.image_label.setText("Keine Bilder gefunden!")
@@ -466,7 +466,6 @@ class MainWindow(QMainWindow):
         self.btn_prev.setEnabled(total > 1)
         self.btn_next.setEnabled(total > 1)
         
-        # Reset Outputs (nur wenn noch kein Ergebnis gecached)
         if path not in self.model_scores:
             self.class_result.setText("Noch keine Klassifikation")
             self.class_result.setStyleSheet("")
@@ -495,7 +494,7 @@ class MainWindow(QMainWindow):
         self.image_label.setPixmap(scaled)
         self.image_label.setStyleSheet("border: none;")
 
-    # --- BATCH DETECTION (Modell auf ALLE Bilder anwenden) ---
+    # --- BATCH DETECTION ---
     def run_batch_detection(self):
         if not self.image_list: return
         
@@ -505,7 +504,6 @@ class MainWindow(QMainWindow):
             self.class_result.setText("Fehler: Modell ungültig")
             return
 
-        # Nur laden wenn nötig
         if self.current_model_path != selected_model:
             self.class_result.setText("Lade Modell...")
             QApplication.processEvents()
@@ -532,7 +530,6 @@ class MainWindow(QMainWindow):
             
             self.progress_bar.setValue(i + 1)
 
-        # 4. Fertig
         self.progress_bar.setVisible(False)
         self.class_result.setText("Batch-Verarbeitung abgeschlossen.")
         self.apply_visuals()
@@ -543,7 +540,6 @@ class MainWindow(QMainWindow):
         
         current_path = self.image_list[self.current_img_idx]
         
-        # Haben wir ein Ergebnis für dieses Bild?
         if current_path not in self.model_scores:
             self.display(self.original_pixmap)
             return
@@ -583,7 +579,7 @@ class MainWindow(QMainWindow):
         import os
         project_dir = os.path.dirname(__file__)
 
-        script_path = os.path.join(project_dir, "2-2_yolo_boxes.py")   # <- DEIN Scriptname
+        script_path = os.path.join(project_dir, "2-2_yolo_boxes.py") 
         model_path  = os.path.join(project_dir, "models_yolo", "best.pt")
 
         if not os.path.exists(script_path):
@@ -609,7 +605,7 @@ class MainWindow(QMainWindow):
 
         # UI: sofort Feedback geben
         self.qr_output.setText("YOLO läuft... bitte warten.")
-        self.setEnabled(False)  # optional: verhindert Mehrfachklicks während Laufzeit
+        self.setEnabled(False) 
 
         # Worker starten
         self.yolo_worker = YoloWorker(script_path, img_path, "models_yolo/best.pt")
@@ -624,7 +620,6 @@ class MainWindow(QMainWindow):
         self.setEnabled(True)
 
         if err_msg:
-            # err_msg kann auch leer sein bei Erfolg
             self.qr_output.setText(f"YOLO fertig, aber Hinweis:\n{err_msg}")
         else:
             self.qr_output.setText(f"YOLO Detektionen: {len(boxes)}")

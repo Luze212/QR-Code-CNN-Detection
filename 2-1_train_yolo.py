@@ -36,9 +36,9 @@ def run_training():
             project=PROJECT_NAME, 
             name=f"train_{model_name.split('.')[0]}",
             plots=True,
-            exist_ok=True,        # Überschreibt alte Ordner gleichen Namens
+            exist_ok=True,   
             device='mps',         # Apple Silicon GPU
-            amp=True              # Mixed Precision (Standard für Speed)
+            amp=True    
         )
         
         print(f"Validiere {model_name}...")

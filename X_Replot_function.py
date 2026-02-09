@@ -3,12 +3,10 @@ import matplotlib.pyplot as plt
 import os
 
 # --- KONFIGURATION ---
-# Pfad zu deinen Log-Dateien für die Plot erstellt werden soll
 LOG_FILE_CSV = 'logs/tuned_cnn_Hyperband_1_300,300/best_tuned_log.csv'
 NAME_PLOT_FILE = 'Bayesian_Plot.png'
 TITLE = 'Bayesian'
 
-# Wo sollen die neuen Bilder hin?
 OUTPUT_DIR = 'logs/replotted_plots'
 
 def create_standard_plot(csv_path, save_name, title_prefix):
@@ -53,7 +51,7 @@ def create_standard_plot(csv_path, save_name, title_prefix):
     # Layout straffen und speichern
     plt.tight_layout()
     save_path = os.path.join(OUTPUT_DIR, save_name)
-    plt.savefig(save_path, dpi=300) # Hohe Auflösung für die Arbeit
+    plt.savefig(save_path, dpi=300)
     plt.close()
     
     print(f"Plot gespeichert: {save_path}")

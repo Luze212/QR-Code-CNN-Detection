@@ -12,7 +12,7 @@ import shutil
 
 # --- KONFIGURATION ---
 BASE_DATA_DIR = 'dataset_final_boxes' # Dataset
-MODELS_DIR = 'models_tfl' # für models und models_tfl anwendbar
+MODELS_DIR = 'models' # für CNN und TFL
 LOGS_BASE_DIR = 'logs/Analyse und Vergleich'
 
 def get_test_generator(input_shape):
@@ -78,7 +78,6 @@ def plot_prediction_distribution(df, save_dir, threshold):
     line_handle = mlines.Line2D([], [], color='red', linestyle='--', label=f'Threshold ({threshold})')
     legend_handles.append(line_handle)
 
-    # ÄNDERUNG: Legende nach unten rechts verschoben
     plt.legend(handles=legend_handles, loc='lower right', frameon=True, shadow=True)
     
     plt.xticks(rotation=45) 
@@ -129,7 +128,7 @@ def main():
 
     results = []
     
-    # Liste für alle Roh-Vorhersagen aller Modelle (für den Violinplot)
+    # Liste für alle Roh-Vorhersagen aller Modelle
     all_predictions_list = []
 
     print(f"Starte Evaluation von {len(model_files)} Modellen...\n")
@@ -150,13 +149,11 @@ def main():
             test_gen = get_test_generator(input_shape)
             
             # 4. Vorhersagen
-            # Wir holen hier die rohen Wahrscheinlichkeiten (Floats)
             raw_predictions = model.predict(test_gen, verbose=0).flatten()
             
             y_true = test_gen.classes
             
-            # NEU: Daten sammeln für Verteilungs-Plot
-            # Wir speichern Modellname, Wahrscheinlichkeit und echtes Label
+            # Daten sammeln für Verteilungs-Plot
             df_pred = pd.DataFrame({
                 'Modell': model_name,
                 'Probability': raw_predictions,
@@ -190,7 +187,6 @@ def main():
             # Plot Confusion Matrix
             plot_confusion_matrix(cm, model_name, save_dir)
             
-            # Aufräumen
             del model
             tf.keras.backend.clear_session()
             
@@ -216,7 +212,6 @@ def main():
         print(f"\nTabelle gespeichert: {csv_path}")
         
         # Balkendiagramm erstellen
-        # Balkendiagramm erstellen (Optimiertes Design)
         plt.figure(figsize=(14, 6))
         
         # Barplot zeichnen
@@ -226,7 +221,7 @@ def main():
         plt.title('Modell Vergleich: Accuracy Ranking', fontsize=14)
         plt.xlabel('Accuracy', fontsize=12)
         plt.ylabel('Modell', fontsize=12)
-        plt.xlim(0, 1.05) # Etwas Platz rechts lassen für die Zahlen
+        plt.xlim(0, 1.05) 
         
         # Vertikales Gitter für bessere Lesbarkeit
         plt.grid(True, axis='x', linestyle='--', alpha=0.7)
@@ -235,9 +230,9 @@ def main():
         for p in barplot.patches:
             width = p.get_width()
             plt.text(
-                width + 0.01,       # X-Position (etwas rechts vom Balkenende)
-                p.get_y() + p.get_height() / 2, # Y-Position (Mitte des Balkens)
-                f'{width:.2%}',     # Text (z.B. "88.35%")
+                width + 0.01,       # X-Position 
+                p.get_y() + p.get_height() / 2, # Y-Position
+                f'{width:.2%}',     # Text
                 ha='left',          # Horizontale Ausrichtung
                 va='center',        # Vertikale Ausrichtung
                 fontsize=11,
@@ -251,11 +246,10 @@ def main():
         plt.close()
         print(f"Ranking-Plot gespeichert: {plot_path}")
         
-        # --- NEU: Verteilungs-Plots erstellen ---
+        # Verteilungs-Plots erstellen
         if all_predictions_list:
             print("\nErstelle Vorhersage-Verteilungs-Plots (Violin Plot)...")
             full_pred_df = pd.concat(all_predictions_list, ignore_index=True)
-            # Wir übergeben hier auch den Threshold, damit die Linie richtig gezeichnet wird
             plot_prediction_distribution(full_pred_df, save_dir, PREDICTION_RATE)
         
     else:

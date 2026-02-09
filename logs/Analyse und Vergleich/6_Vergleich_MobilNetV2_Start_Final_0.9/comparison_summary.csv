@@ -1,0 +1,3 @@
+Modell,Accuracy,F1-Score,True Pos (QR gefunden),False Pos (Fehlalarm),True Neg (Korrekt ignoriert),False Neg (QR übersehen),Input Size
+Final_MobileNetV2,0.8706,0.9163,219,9,50,31,"(224, 224)"
+Base_MobileNetV2,0.822,0.8832,208,13,46,42,"(224, 224)"

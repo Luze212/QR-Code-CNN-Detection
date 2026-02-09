@@ -11,19 +11,18 @@ import shutil
 # --- 1. INPUTS AUS PHASE 1 ---
 # ==========================================
 
-# Welches Modell optimieren wir gerade?
 # CHOSEN_MODEL = "MobileNetV2" 
 CHOSEN_MODEL = "VGG16" 
 # CHOSEN_MODEL = "ResNet50"
 
-# Trage hier die Ergebnisse aus Skript 1 ein:
+# Ergebnisse aus 1-5_1
 TUNED_DENSE_UNITS = 320  
 TUNED_DROPOUT = 0.0   
 TUNED_LR_PHASE1 = 0.001    
 TUNED_OPTIMIZER = 'rmsprop'    
 
 # ==========================================
-# --- 2. AUGMENTATION (gleich head_tuning) ---
+# --- 2. AUGMENTATION ---
 # ==========================================
 AUGMENTATION_CONFIG = {
     'rescale': 1./255,
@@ -58,8 +57,8 @@ elif CHOSEN_MODEL == "ResNet50":
 TEST_LR_PHASE2 = [1e-6, 1e-5, 5e-5, 1e-4]
 
 BASE_PARAMS = {
-    'epochs_phase1': 10, # Warmup
-    'epochs_phase2': 15  # Test-Dauer
+    'epochs_phase1': 10,
+    'epochs_phase2': 15 
 }
 
 # ==========================================
@@ -90,7 +89,7 @@ def run_test(unfreeze, lr2, log_subdir):
     base_model = get_base_model_instance(CHOSEN_MODEL, IMG_SIZE + (3,))
     base_model.trainable = False
     
-    # 2. Modell Bauen (Mit Tuner Werten)
+    # 2. Modell Bauen
     model = models.Sequential([
         base_model,
         layers.GlobalAveragePooling2D(),
@@ -109,7 +108,6 @@ def run_test(unfreeze, lr2, log_subdir):
     freeze_until = max(0, len(base_model.layers) - unfreeze)
     for layer in base_model.layers[:freeze_until]: layer.trainable = False
     
-    # Phase 2 Optimizer (Adam ist Standard für Fine-Tuning Vergleich)
     model.compile(optimizer=optimizers.Adam(learning_rate=lr2), loss='binary_crossentropy', metrics=['accuracy'])
     
     csv_file = os.path.join(log_subdir, f"log_L{unfreeze}_LR{lr2}.csv")

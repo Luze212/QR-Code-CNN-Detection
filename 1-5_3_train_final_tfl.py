@@ -17,13 +17,13 @@ import csv
 CHOSEN_MODEL = "VGG16"
 # CHOSEN_MODEL = "ResNet50"
 
-# Werte aus Tuning Phase 1 (Kopf):
+# Werte aus Tuning Phase 1:
 TUNED_DENSE_UNITS = 320
 TUNED_DROPOUT = 0.0     
 TUNED_LR_PHASE1 = 0.001     
 TUNED_OPTIMIZER = 'rmsprop'    
 
-# Werte aus Tuning Phase 2 (Körper):
+# Werte aus Tuning Phase 2:
 BEST_UNFREEZE_LAYERS = 15
 BEST_LR_PHASE2 = 5e-05    
 
@@ -37,11 +37,11 @@ MODELS_DIR = "models_tfl"
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
 
-# Epochen (Wie in den Tests)
+# Epochen
 EPOCHS_PHASE_1 = 10
-EPOCHS_PHASE_2 = 20 # 20 Epochen für das Finale Fine-Tuning
+EPOCHS_PHASE_2 = 20
 
-# AUGMENTATION (Gesetz! Darf nicht geändert werden)
+# AUGMENTATION
 AUGMENTATION_CONFIG = {
     'rescale': 1./255,
     'rotation_range': 15,
@@ -56,7 +56,7 @@ AUGMENTATION_CONFIG = {
 # --- 3. HELFER & PLOTTING ---
 # ==========================================
 
-# Deine Plotting-Funktion (unverändert)
+# Plotting-Funktion
 def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     """
     Erstellt einen Plot im standardisierten Design.
@@ -75,7 +75,6 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     # --- Linke Seite: Accuracy ---
     ax1.plot(epochs, acc, label='Training Accuracy', linewidth=2)
     ax1.plot(epochs, val_acc, label='Validation Accuracy', linewidth=2)
-    # Optional: Linie für Phase 2 Start einzeichnen
     ax1.axvline(x=EPOCHS_PHASE_1-1, color='green', linestyle='--', alpha=0.5, label='Start Fine-Tuning')
     
     ax1.set_title(f'{title_prefix}: Accuracy (Best: {best_val_acc:.2%})', fontsize=14)
@@ -100,7 +99,6 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
     plt.savefig(plot_path, dpi=300)
     plt.close()
 
-# Dummy-Klasse, damit deine Plot-Funktion "history.history" aufrufen kann
 class CombinedHistory:
     def __init__(self):
         self.history = {}
@@ -132,7 +130,6 @@ def main():
     os.makedirs(LOGS_DIR, exist_ok=True)
     os.makedirs(MODELS_DIR, exist_ok=True)
     
-    # Konfiguration sichern (für die Arbeit/Doku)
     config = {
         "model": CHOSEN_MODEL,
         "phase1_units": TUNED_DENSE_UNITS,
@@ -146,7 +143,7 @@ def main():
     with open(os.path.join(LOGS_DIR, "final_config.json"), 'w') as f:
         json.dump(config, f, indent=4)
         
-    # CSV Speichern (zusätzlich)
+    # CSV Speichern
     flat_config = config.copy()
     flat_config['augmentation'] = str(config['augmentation']) 
     with open(os.path.join(LOGS_DIR, "final_params.csv"), 'w', newline='') as f:
@@ -191,7 +188,6 @@ def main():
     freeze_until = max(0, len(base_model.layers) - BEST_UNFREEZE_LAYERS)
     for layer in base_model.layers[:freeze_until]: layer.trainable = False
     
-    # Wichtig: Immer Adam für Fine-Tuning nehmen (oder den Tuned Optimizer mit kleiner LR)
     model.compile(optimizer=optimizers.Adam(learning_rate=BEST_LR_PHASE2), 
                   loss='binary_crossentropy', metrics=['accuracy'])
     
@@ -206,7 +202,7 @@ def main():
     hist2 = model.fit(
         train_gen,
         epochs=EPOCHS_PHASE_1 + EPOCHS_PHASE_2,
-        initial_epoch=hist1.epoch[-1] + 1, # Nahtloser Übergang
+        initial_epoch=hist1.epoch[-1] + 1,
         validation_data=val_gen,
         callbacks=cb_p2
     )

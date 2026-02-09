@@ -333,11 +333,9 @@ class ReaderWorker(QThread):
                 if not _zxing_ok:
                     return False, ""
 
-                # ZXing akzeptiert i.d.R. numpy arrays (OpenCV-Images). :contentReference[oaicite:2]{index=2}
                 try:
                     barcodes = zxingcpp.read_barcodes(img_variant)
                 except Exception:
-                    # manchmal hilft contiguous memory
                     barcodes = zxingcpp.read_barcodes(np.ascontiguousarray(img_variant))
 
                 if not barcodes:
@@ -694,7 +692,7 @@ class MainWindow(QMainWindow):
         self.btn_angle.clicked.connect(self.start_angle)
         self.sidebar_layout.addWidget(self.btn_angle)
 
-        # Plot Container erstellen (damit der Rahmen sichtbar ist)
+        # Plot Container erstellen
         self.plot_container = QWidget()
         self.plot_container.setObjectName("PlotContainer")
         self.plot_container.setMinimumHeight(350)
@@ -745,13 +743,12 @@ class MainWindow(QMainWindow):
                 for f in files: self.combo_model.addItem(f); found = True
         if not found: self.combo_model.addItem("Keine Modelle"); self.btn_run.setEnabled(False)
 
-    # --- FILE DIALOGS (FIX: KÜRZEN) ---
+    # --- FILE DIALOGS ---
     def open_file_dialog(self):
         f, _ = QFileDialog.getOpenFileName(self, "Bild wählen", "", "Bilder (*.png *.jpg *.jpeg *.bmp *.webp)")
         if f: 
             self.image_paths = [f]
             self.reset_viewer()
-            # Text kürzen
             text = os.path.basename(f)
             if len(text) > 30: text = text[:15] + "..." + text[-10:]
             self.input_path.setText(text)
@@ -769,13 +766,12 @@ class MainWindow(QMainWindow):
             self.image_paths = sorted(list(set(self.image_paths)))
             if self.image_paths: 
                 self.reset_viewer()
-                # Text kürzen
                 text = f"{os.path.basename(folder)} ({len(self.image_paths)})"
                 if len(text) > 30: text = text[:15] + "..." + text[-10:]
                 self.input_path.setText(text)
             else: self.lbl_filename.setText("0 Bilder")
 
-    # --- NAVIGATION (FIX: FILENAME KÜRZEN) ---
+    # --- NAVIGATION ---
     def reset_viewer(self):
         self.current_index = 0
         self.scores = {}
@@ -801,7 +797,6 @@ class MainWindow(QMainWindow):
         if not self.image_paths: return
         path = self.image_paths[self.current_index]
         
-        # Text kürzen für unteres Label
         fname = os.path.basename(path)
         if len(fname) > 25: fname = fname[:12] + "..." + fname[-10:]
         self.lbl_filename.setText(f"{self.current_index+1}/{len(self.image_paths)}: {fname}")
@@ -837,7 +832,6 @@ class MainWindow(QMainWindow):
                 x = int(box['x'] * scale_x); y = int(box['y'] * scale_y)
                 w = int(box['w'] * scale_x); h = int(box['h'] * scale_y)
 
-                # --- NEU: Farbe abhängig von Lesbarkeit (gesetzt nach "INHALT LESEN") ---
                 readable = box.get("readable", None)
                 if readable is True:
                     pen = QPen(QColor("#00ff00"))  # grün
@@ -933,21 +927,21 @@ class MainWindow(QMainWindow):
 
     def on_yolo_finished(self, boxes):
         path = self.image_paths[self.current_index]
-        self.yolo_boxes[path] = self._filter_boxes_by_min_conf(boxes)  # Änderung: Conv. Wert speichern für Code lesen
+        self.yolo_boxes[path] = self._filter_boxes_by_min_conf(boxes)
         self.btn_yolo.setEnabled(True); self.btn_yolo.setText("QR-CODES ORTEN")
         self.prog_yolo.setVisible(False)
         self.update_image_view()
         self.setFocus()
     
     # Liefert den aktuellen Min-Konfidenz-Schwellenwert für YOLO
-    def _get_min_conf_value(self) -> float:     # Änderung: Conv. Wert speichern für Code lesen. Ganze Funktion
+    def _get_min_conf_value(self) -> float:
         try:
             return float(self.slider_yolo.value()) / 100.0
         except Exception:
             return 0.0
 
     # Filtert eine Box-Liste so, dass nur Boxen übrig bleiben, die auch bei der aktuellen Slider-Einstellung gezeichnet werden würden.
-    def _filter_boxes_by_min_conf(self, boxes):     # Änderung: Conv. Wert speichern für Code lesen. Ganze Funktion
+    def _filter_boxes_by_min_conf(self, boxes): 
         boxes = boxes or []
         thresh = self._get_min_conf_value()
         return [b for b in boxes if float(b.get("confidence", 0.0)) >= thresh]
@@ -963,27 +957,27 @@ class MainWindow(QMainWindow):
         self.btn_read.setEnabled(False); self.btn_read.setText("LESE...")
         self.list_reader.clear()
 
-        boxes_to_read = self._filter_boxes_by_min_conf(self.yolo_boxes.get(path, []))                   # Dieser Block durch 
-        if not boxes_to_read:                                                                           # self.reader_worker = ReaderWorker(path, self.yolo_boxes[path])
-            self.txt_content.setText("Keine QR-Boxen über der Min.-Konfidenz. Slider ggf. senken.")     #
-            self.btn_read.setEnabled(True); self.btn_read.setText("INHALT LESEN")                       # ersetzt
-            return                                                                                      #
+        boxes_to_read = self._filter_boxes_by_min_conf(self.yolo_boxes.get(path, []))                   
+        if not boxes_to_read:                                                                           
+            self.txt_content.setText("Keine QR-Boxen über der Min.-Konfidenz. Slider ggf. senken.")     
+            self.btn_read.setEnabled(True); self.btn_read.setText("INHALT LESEN")                      
+            return                                                                                      
 
-        self.reader_worker = ReaderWorker(path, boxes_to_read)                                          # Ebenfalls aus dem Block
+        self.reader_worker = ReaderWorker(path, boxes_to_read)                                         
         self.reader_worker.finished.connect(self.on_read_finished)
         self.reader_worker.start()
 
     def on_read_finished(self, results):
         self.btn_read.setEnabled(True); self.btn_read.setText("INHALT LESEN")
 
-        # --- NEU: pro code_id merken, ob er von irgendeinem Reader lesbar war ---
+        # --- pro code_id merken, ob er von irgendeinem Reader lesbar war ---
         readable_by_id = {}
         for res in results:
             cid = int(res.get("code_id", -1))
             ok = bool(res.get("success", False))
             readable_by_id[cid] = readable_by_id.get(cid, False) or ok
 
-        # --- NEU: Lesbarkeit in die gespeicherten YOLO-Boxen für das aktuelle Bild schreiben ---
+        # --- Lesbarkeit in die gespeicherten YOLO-Boxen für das aktuelle Bild schreiben ---
         path = self.image_paths[self.current_index]
         boxes = self.yolo_boxes.get(path, [])
         for b in boxes:
@@ -996,7 +990,7 @@ class MainWindow(QMainWindow):
             item = QListWidgetItem(f"{icon} {res['reader']} (ID: #{res['code_id']})")
             item.setData(Qt.ItemDataRole.UserRole, res['content'])
             self.list_reader.addItem(item)
-        self.update_image_view()  # --- NEU: neu zeichnen, damit Rahmenfarben aktualisiert werden
+        self.update_image_view()  # --- zeichnen, damit Rahmenfarben aktualisiert werden
         self.setFocus()
 
     def show_reader_content(self, item):
@@ -1019,7 +1013,7 @@ class MainWindow(QMainWindow):
         ax = self.plot_figure.add_subplot(111, projection='3d')
         ax.set_facecolor('#1e1e1e')
 
-        # ---- Farben (satt + gut lesbar auf dunkel) ----
+        # ---- Farben ----
         col_txt = 'white'
         col_ticks = 'gray'
         col_axes = '#9a9a9a'       # Achsen neutral (kein Default-Blau)

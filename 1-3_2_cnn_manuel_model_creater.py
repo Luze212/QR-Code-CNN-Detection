@@ -59,11 +59,10 @@ def main():
     if not run_name: run_name = "unnamed_experiment"
     
     # Ordnerstruktur anlegen
-    # Log-Ordner: Hier kommen Details rein
     experiment_log_dir = os.path.join(LOGS_BASE_DIR, run_name)
     os.makedirs(experiment_log_dir, exist_ok=True)
     
-    # Model-Ordner: Hier kommen NUR die .keras Dateien rein (für den Vergleich später)
+    # Model-Ordner:
     os.makedirs(MODELS_BASE_DIR, exist_ok=True)
     
     print(f"\nBitte Hyperparameter wählen (Enter für Default):")

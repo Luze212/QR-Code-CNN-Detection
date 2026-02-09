@@ -15,6 +15,7 @@ models/
 models_tfl/
 models_yolo/
 models_cnn
+models_test
 *.pt
 *.pth
 *.onnx

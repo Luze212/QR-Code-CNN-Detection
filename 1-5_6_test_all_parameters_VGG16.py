@@ -23,7 +23,6 @@ random.seed(seed)
 # ==========================================
 # --- KONFIGURATION ---
 # ==========================================
-# HIER WÄHLEN: Welches Modell soll getestet werden?
 CHOSEN_MODEL = "VGG16"
 
 BASE_MODELS_DIR = f'models/TFL_third_optimization_{CHOSEN_MODEL}'
@@ -32,7 +31,7 @@ DATASET_DIR = 'dataset_final_boxes'
 IMG_SIZE = (224, 224)
 INPUT_SHAPE = IMG_SIZE + (3,)
 
-# --- BASIS HYPERPARAMETER (Deine Gewinner-Werte) ---
+# --- BASIS HYPERPARAMETER ---
 CONFIGS = {
     "VGG16": {
         'warmup_epochs': 10, 
@@ -243,7 +242,6 @@ def create_confusion_matrices(results_list, category_name, save_folder):
 def write_evaluation(results_list, category_name, save_folder, base_acc):
     path = os.path.join(save_folder, f'Evaluation_{category_name}.txt')
     
-    # FIX: Liste vorher sortieren, damit wir enumerate sauber nutzen können
     sorted_res = sorted(results_list, key=lambda x: max(x['history']['val_accuracy']), reverse=True)
     
     with open(path, 'w') as f:
@@ -252,7 +250,6 @@ def write_evaluation(results_list, category_name, save_folder, base_acc):
         f.write("-" * 50 + "\n")
         
         for idx, res in enumerate(sorted_res):
-            # 'res' ist jetzt direkt das Dictionary
             best = max(res['history']['val_accuracy'])
             min_loss = min(res['history']['val_loss'])
             diff = best - base_acc
@@ -270,7 +267,6 @@ def write_evaluation(results_list, category_name, save_folder, base_acc):
             # Parameter Abweichungen anzeigen
             if "Basis" not in res['label']:
                 f.write("   - Geänderte Parameter:\n")
-                # params ist ein Dictionary, wir vergleichen mit BASE_PARAMS
                 for k, v in res['params'].items():
                     if k in BASE_PARAMS and BASE_PARAMS[k] != v:
                          f.write(f"     * {k}: {v} (Basis: {BASE_PARAMS[k]})\n")
@@ -312,7 +308,7 @@ def run_full_experiment():
     for cat_name, items in all_tests.items():
         print(f"\n>>> Kategorie: {cat_name}")
         curr_log_dir = os.path.join(BASE_LOGS_DIR, cat_name)
-        curr_model_dir = os.path.join(BASE_MODELS_DIR, cat_name) # Ordner für Modelle
+        curr_model_dir = os.path.join(BASE_MODELS_DIR, cat_name)
         os.makedirs(curr_log_dir, exist_ok=True)
         os.makedirs(curr_model_dir, exist_ok=True)
         

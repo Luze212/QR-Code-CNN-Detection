@@ -8,8 +8,8 @@ import os
 import gc
 
 # --- KONFIGURATION ---
-BASE_DIR = 'dataset_final_boxes'  # Dataset Pfad
-OUTPUT_DIR = 'logs/Argumentation-Tests_Precision_2' # Speicherordner
+BASE_DIR = 'dataset_final_boxes'
+OUTPUT_DIR = 'logs/Argumentation-Tests_Precision_2'
 IMG_SIZE = (256, 256)
 EPOCHS = 35
 
@@ -29,7 +29,6 @@ TUNING_CONFIG = {
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # --- AUGMENTATION SZENARIEN ---
-# (Unverändert, um Vergleichbarkeit zu gewährleisten)
 aug_scenarios = [
     {
         "name": "1_Minimal",
@@ -177,7 +176,7 @@ def plot_and_save_history(history, folder, filename_prefix, title_prefix):
 
 # --- HAUPTPROGRAMM ---
 def main():
-    print(f"🚀 Starte Augmentation-Testreihe mit getunetem Modell")
+    print(f"Starte Augmentation-Testreihe mit getunetem Modell")
     print("Konfiguration:")
     for k, v in TUNING_CONFIG.items():
         print(f"  - {k}: {v}")
@@ -189,7 +188,7 @@ def main():
         print(f"\n--- Teste Szenario: {name} ---")
         print(f"Beschreibung: {scenario['desc']}")
         
-        # 1. Generatoren (Batch Size aus Config!)
+        # 1. Generatoren
         batch_size = TUNING_CONFIG['batch_size']
         
         train_datagen = ImageDataGenerator(**scenario['params'])
@@ -214,7 +213,7 @@ def main():
 
         # 2. Modell dynamisch bauen & Session clearen
         tf.keras.backend.clear_session()
-        gc.collect() # Wichtig für Mac Speicher
+        gc.collect()
         
         model = build_tuned_model(TUNING_CONFIG)
         
