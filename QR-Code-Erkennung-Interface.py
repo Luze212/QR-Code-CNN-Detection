@@ -3,6 +3,7 @@ import os
 import glob
 import numpy as np
 import PySide6
+import math
 
 # --- PySide6 IMPORTS ---
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -18,6 +19,7 @@ matplotlib.use('QtAgg')
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import load_img, img_to_array # type: ignore
@@ -399,11 +401,12 @@ class AngleWorker(QThread):
     finished = Signal(dict)
     error = Signal(str)
 
-    def __init__(self, image_path, box_id, boxes):
+    def __init__(self, image_path, box_id, boxes, fov_x_deg=70.0):
         super().__init__()
         self.image_path = image_path
         self.target_id = box_id
         self.boxes = boxes
+        self.fov_x_deg = float(fov_x_deg)
 
     def run(self):
         # ==============================================================================
@@ -433,20 +436,74 @@ class AngleWorker(QThread):
         # }
         # ==============================================================================
         try:
-            # --- TODO: HIER CODE EINFÜGEN ---
-            
-            # --- DUMMY DATEN ---
-            import random
-            nx = random.uniform(-1, 1)
-            # Simulierter Normalenvektor
+            image = cv2.imread(self.image_path)
+            if image is None:
+                raise RuntimeError("Bild nicht ladbar")
+
+            H, W = image.shape[:2]
+
+            # Zielbox finden
+            target = None
+            for b in self.boxes:
+                if int(b.get("id", -1)) == int(self.target_id):
+                    target = b
+                    break
+            if target is None:
+                raise RuntimeError(f"Box ID {self.target_id} nicht gefunden")
+
+            x, y, w, h = float(target["x"]), float(target["y"]), float(target["w"]), float(target["h"])
+
+            # Box-Mitte und Bildmitte
+            cx = x + w / 2.0
+            cy = y + h / 2.0
+            ix = W / 2.0
+            iy = H / 2.0
+
+            # FOV_y aus Aspect Ratio ableiten (Kamera-KS)
+            fov_x = math.radians(self.fov_x_deg)
+            fov_y = 2.0 * math.atan(math.tan(fov_x / 2.0) * (H / W))
+
+            # normierte Offsets (rechts/unten positiv)
+            dx = (cx - ix) / W
+            dy = (cy - iy) / H
+
+            # Yaw/Pitch Empfehlung (Grad)
+            yaw_deg = math.degrees(dx * fov_x)
+            pitch_deg = math.degrees(-dy * fov_y)
+
+            # Empfohlener Blickvektor aus yaw/pitch (Kamera-KS, Basisblick +Z)
+            yaw = math.radians(yaw_deg)
+            pitch = math.radians(pitch_deg)
+
+            # Rotation: erst yaw um Y, dann pitch um X auf Basisvektor [0,0,1]
+            # Ergebnis:
+            # x = sin(yaw)*cos(pitch)
+            # y = -sin(pitch)
+            # z = cos(yaw)*cos(pitch)
+            rec = np.array([
+                math.sin(yaw) * math.cos(pitch),
+                -math.sin(pitch),
+                math.cos(yaw) * math.cos(pitch)
+            ], dtype=float)
+
+            rec = rec / (np.linalg.norm(rec) + 1e-9)
+
             result = {
-                'normal_vec': [nx, random.uniform(-1, 1), 1.0], 
-                'view_vec': [0, 0, 1], 
-                'angle_deg': 42.5
+                "yaw_deg": float(yaw_deg),
+                "pitch_deg": float(pitch_deg),
+                "view_vec": [0.0, 0.0, 1.0],
+                "rec_vec": rec.tolist(),
+                "bbox_center": [float(cx), float(cy)],
+                "img_size": [int(W), int(H)],
+                "fov_x_deg": float(self.fov_x_deg),
+                "fov_y_deg": float(math.degrees(fov_y)),
             }
             self.finished.emit(result)
+
         except Exception as e:
             self.error.emit(str(e))
+
+
 
 # =============================================================================
 # --- HAUPTFENSTER ---
@@ -779,7 +836,7 @@ class MainWindow(QMainWindow):
                 if readable is True:
                     pen = QPen(QColor("#00ff00"))  # grün
                 elif readable is False:
-                    pen = QPen(QColor("#ff0000"))  # rot
+                    pen = QPen(QColor(255, 40, 40, 140))  # rot
                 else:
                     pen = QPen(QColor("#00ff00"))  # default (noch nicht gelesen)
 
@@ -946,24 +1003,182 @@ class MainWindow(QMainWindow):
         path = self.image_paths[self.current_index]
         target_id_str = self.combo_qr_id.currentText()
         if not target_id_str: return
-        self.angle_worker = AngleWorker(path, int(target_id_str), self.yolo_boxes.get(path, []))
+        self.angle_worker = AngleWorker(path, int(target_id_str), self.yolo_boxes.get(path, []), fov_x_deg=70.0)
         self.angle_worker.finished.connect(self.on_angle_finished)
         self.angle_worker.start()
 
-    def on_angle_finished(self, data):
+    def on_angle_finished(self, data):  # Winkel-Visualisierung komplette Funktion
+         # ---- Setup Figure / Axes ----
         self.plot_figure.clear()
         ax = self.plot_figure.add_subplot(111, projection='3d')
         ax.set_facecolor('#1e1e1e')
-        n = data['normal_vec']
-        ax.quiver(0, 0, 0, n[0], n[1], n[2], color='#1f6aa5', length=1.0, normalize=True, label='Normale')
-        v = data['view_vec']
-        ax.quiver(0, 0, 0, v[0], v[1], v[2], color='white', length=1.0, normalize=True, linestyle='dashed', label='Kamera')
-        xx, yy = np.meshgrid(range(-1, 2), range(-1, 2))
-        z = (-n[0] * xx - n[1] * yy) / n[2]
-        ax.plot_surface(xx, yy, z, alpha=0.3, color='green')
-        ax.set_title(f"Winkel: {data['angle_deg']}°", color='white')
-        ax.tick_params(colors='gray')
-        ax.set_xlim([-1, 1]); ax.set_ylim([-1, 1]); ax.set_zlim([-1, 1])
+
+        # ---- Farben (satt + gut lesbar auf dunkel) ----
+        col_txt = 'white'
+        col_ticks = 'gray'
+        col_axes = '#9a9a9a'       # Achsen neutral (kein Default-Blau)
+
+        col_cam = '#0b3d91'        # Kamera: dunkleres Blau
+        col_target = '#000000'     # Schwenkrichtung: schwarz
+
+        col_yaw = '#00ff2a'        # sehr sattes Grün
+        col_pitch = '#ff0000'      # sattes Rot
+
+        # QR-Ebene sichtbarer
+        col_plane_face = (0.15, 0.80, 1.00, 0.28)   # leicht cyan/blau, transparenter Look
+        col_plane_edge = (0.15, 0.80, 1.00, 0.75)
+
+        # ---- Achsenbeschriftung (konsistent zum Decken-Plot) ----
+        ax.set_xlabel("X: von links nach rechts", color=col_txt)
+        ax.set_ylabel("Y: von unten nach oben", color=col_txt)
+        ax.set_zlabel("Z: Deckenhöhe", color=col_txt)
+
+        # ---- Achsenlinien ----
+        axis_len = 1.0
+        axis_w = 1.6
+        ax.plot([0, axis_len], [0, 0],       [0, 0],       linewidth=axis_w, color=col_axes)  # +X
+        ax.plot([0, 0],       [0, axis_len], [0, 0],       linewidth=axis_w, color=col_axes)  # +Y
+        ax.plot([0, 0],       [0, 0],       [0, -axis_len], linewidth=axis_w, color=col_axes) # +Z (down)
+
+        # ---- Hilfsfunktion: Pfeilspitze am Ende einer Kurve ----
+        def add_arrowhead(points_xyz, color, size=0.11, width=3):
+            t0 = points_xyz[-2]
+            t1 = points_xyz[-1]
+            d = t1 - t0
+            d = d / (np.linalg.norm(d) + 1e-9)
+
+            up = np.array([0.0, 0.0, 1.0])
+            s = np.cross(d, up)
+            if np.linalg.norm(s) < 1e-6:
+                up = np.array([0.0, 1.0, 0.0])
+                s = np.cross(d, up)
+            s = s / (np.linalg.norm(s) + 1e-9)
+
+            wing1 = t1 - d * size + s * (size * 0.7)
+            wing2 = t1 - d * size - s * (size * 0.7)
+
+            ax.plot([t1[0], wing1[0]], [t1[1], wing1[1]], [t1[2], wing1[2]], color=color, linewidth=width)
+            ax.plot([t1[0], wing2[0]], [t1[1], wing2[1]], [t1[2], wing2[2]], color=color, linewidth=width)
+
+        # ---- Vektor: Kamera aktuell (aus data["view_vec"]) ----
+        v = np.array(data["view_vec"], dtype=float)
+        v_plot = np.array([v[0], -v[1], -v[2]], dtype=float)  # Decken-Plot (Y und Z gespiegelt)
+        v_plot = v_plot / (np.linalg.norm(v_plot) + 1e-9)
+
+        ax.quiver(
+            0, 0, 0, v_plot[0], v_plot[1], v_plot[2],
+            color=col_cam, length=1.0, normalize=True,
+            linestyle='solid', linewidth=1.4,
+            label='Kamera (aktuell)'
+        )
+
+        # ---- Schwenkrichtung aus Yaw/Pitch ----
+        yaw_deg = float(data["yaw_deg"])
+        pitch_deg = float(data["pitch_deg"])
+        yaw = math.radians(yaw_deg)
+        pitch = math.radians(pitch_deg)
+
+        dir_cam = np.array([
+            math.sin(yaw) * math.cos(pitch),
+            -math.sin(pitch),
+            math.cos(yaw) * math.cos(pitch)
+        ], dtype=float)
+        dir_cam = dir_cam / (np.linalg.norm(dir_cam) + 1e-9)
+
+        dir_plot = np.array([dir_cam[0], -dir_cam[1], -dir_cam[2]], dtype=float)
+        dir_plot = dir_plot / (np.linalg.norm(dir_plot) + 1e-9)
+
+        ax.quiver(
+            0, 0, 0, dir_plot[0], dir_plot[1], dir_plot[2],
+            color=col_target, length=1.0, normalize=True,
+            linewidth=2.2,
+            label='Schwenkrichtung (auf QR)'
+        )
+
+        # ----------------------------------------------------------------------
+        # QR-Ebene als "Zettel/QR-Fläche": an Zielvektor gekoppelt
+        # + 0.5 tiefer (also -0.5 zusätzlich)
+        # ----------------------------------------------------------------------
+        qr_plane_z = -1.2  # vorher -1.0, jetzt 0.5 tiefer
+
+        if abs(dir_plot[2]) > 1e-6:
+            t_hit = qr_plane_z / dir_plot[2]
+        else:
+            t_hit = 1.0
+
+        qr_cx = t_hit * dir_plot[0]
+        qr_cy = t_hit * dir_plot[1]
+        qr_cz = qr_plane_z
+
+        qr_w, qr_h = 0.9, 0.6
+
+        p1 = (qr_cx - qr_w/2, qr_cy - qr_h/2, qr_cz)
+        p2 = (qr_cx + qr_w/2, qr_cy - qr_h/2, qr_cz)
+        p3 = (qr_cx + qr_w/2, qr_cy + qr_h/2, qr_cz)
+        p4 = (qr_cx - qr_w/2, qr_cy + qr_h/2, qr_cz)
+
+        plane = Poly3DCollection(
+            [[p1, p2, p3, p4]],
+            facecolor=col_plane_face,
+            edgecolor=col_plane_edge,
+            linewidths=1.3
+        )
+        ax.add_collection3d(plane)
+
+        ax.text(
+            qr_cx, qr_cy, qr_cz, "QR-Ebene",
+            color='white', fontsize=11, fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.25', facecolor=(0, 0, 0, 0.65), edgecolor='none')
+        )
+
+        # ----------------------------------------------------------------------
+        # Referenz-Geraden (beschriftet, sehr gut lesbar)
+        # ----------------------------------------------------------------------
+        ax.plot([0.0, -1.5], [0.0, 0.0], [0.0, 0.0], color=col_pitch, linewidth=3)
+        ax.text(
+            -1.5, 0.0, 0.0, "Pitch",
+            color=col_txt, fontsize=13, fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.28', facecolor=col_pitch, edgecolor='none', alpha=0.92)
+        )
+
+        ax.plot([0.0, 0.0], [0.0, 1.5], [0.0, 0.0], color=col_yaw, linewidth=3)
+        ax.text(
+            0.0, 1.5, 0.0, "Yaw",
+            color=col_txt, fontsize=13, fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.28', facecolor=col_yaw, edgecolor='none', alpha=0.92)
+        )
+
+        # ---- Referenz-Rotationsbögen (160°) ----
+        arc_r = 0.40
+        yaw_off = np.array([0.0, 1.0, 0.0])
+        pitch_off = np.array([-1.0, 0.0, 0.0])
+
+        ref_deg = 160.0
+        half = math.radians(ref_deg / 2.0)
+        theta_ref = np.linspace(-half, half, 140)
+
+        x = arc_r * np.sin(theta_ref)
+        y = np.zeros_like(theta_ref)
+        z = -arc_r * np.cos(theta_ref)
+        x += yaw_off[0]; y += yaw_off[1]; z += yaw_off[2]
+        ax.plot(x, y, z, color=col_yaw, linewidth=3.6)
+        add_arrowhead(np.vstack([x, y, z]).T, color=col_yaw, width=5)
+
+        x = np.zeros_like(theta_ref)
+        y = -arc_r * np.sin(theta_ref)
+        z = -arc_r * np.cos(theta_ref)
+        x += pitch_off[0]; y += pitch_off[1]; z += pitch_off[2]
+        ax.plot(x, y, z, color=col_pitch, linewidth=3.6)
+        add_arrowhead(np.vstack([x, y, z]).T, color=col_pitch, width=5)
+
+        # ---- Titel / Ticks / Limits ----
+        ax.set_title(f"Yaw: {yaw_deg:.1f}° | Pitch: {pitch_deg:.1f}°", color=col_txt)
+        ax.tick_params(colors=col_ticks)
+
+        ax.set_xlim([-1.7, 1.3])
+        ax.set_ylim([-1.3, 1.7])
+        ax.set_zlim([-1.6, 0.0])
+
         ax.legend()
         self.plot_canvas.draw()
         self.setFocus()
