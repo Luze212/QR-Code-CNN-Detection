@@ -26,8 +26,8 @@ random.seed(seed)
 # HIER WÄHLEN: Welches Modell soll getestet werden?
 CHOSEN_MODEL = "ResNet50"
 
-BASE_MODELS_DIR = f'models/TFL_fourth_optimization_{CHOSEN_MODEL}'
-BASE_LOGS_DIR = f'logs/1-5 TFL Logs/9 {CHOSEN_MODEL}_fourth_optimization'
+BASE_MODELS_DIR = f'models/TFL_fifth_optimization_{CHOSEN_MODEL}'
+BASE_LOGS_DIR = f'logs/1-5 TFL Logs/10 {CHOSEN_MODEL}_fifth_optimization'
 DATASET_DIR = 'dataset_final_boxes'
 IMG_SIZE = (224, 224)
 INPUT_SHAPE = IMG_SIZE + (3,)
@@ -41,9 +41,9 @@ CONFIGS = {
         'finetune_epochs': 25, 
         'finetune_lr': 1e-4,        # Final
         'unfreeze_layers': 150,     # Final         max 175
-        'batch_size': 48,           # vorher 46
+        'batch_size': 50,           # vorher 46
         'dropout': 0.3,             # Final
-        'dense_units': 170          # vorher 180
+        'dense_units': 150          # vorher 170
     }
 }
 BASE_PARAMS = CONFIGS[CHOSEN_MODEL]
@@ -53,8 +53,8 @@ SINGLE_PARAM_TESTS = {
     # 'finetune_lr': [1e-3, 1e-5],      
     # 'unfreeze_layers': [140, 160],     
     # 'dropout': [0.1, 0.3],         
-    'dense_units': [150, 160],        
-    'batch_size': [50, 54],
+    'dense_units': [140, 160],        
+    'batch_size': [46, 54],
 }
 
 COMBINATION_GROUPS = {
