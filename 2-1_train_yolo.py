@@ -62,19 +62,27 @@ def run_training():
     # 3. Training starten
     # YOLO erkennt automatisch 'nc: 1' aus der YAML und tauscht den Head aus.
     results = model.train(
-        data=DATA_YAML_PATH,
-        epochs=EPOCHS,
-        imgsz=IMG_SIZE,
-        batch=BATCH_SIZE,
-        workers=WORKERS,      
-        project=PROJECT_NAME,
-        name=f"train_{MODEL_NAME.split('.')[0]}",
-        plots=True,
-        exist_ok=True,
-        device='mps',         # Erzwingt Apple Metal Performance Shaders
-        amp=True,             # Mixed Precision (schneller)
-        single_cls=True       # ZWINGT das Modell, alles als EINE Klasse zu sehen (perfekt für nur QR)
-    )
+            data=DATA_YAML_PATH,
+            epochs=30,            # Weniger gegen Overfitting
+            imgsz=IMG_SIZE,
+            batch=BATCH_SIZE,
+            workers=WORKERS,      
+            project=PROJECT_NAME,
+            name=f"train_ROBUST_{MODEL_NAME.split('.')[0]}", # Neuer Name
+            plots=True,
+            exist_ok=True,
+            device='mps',        
+            amp=True,             
+            single_cls=True,
+            
+            # --- NEU: Gegen Overfitting (Augmentation) ---
+            degrees=15.0,      
+            translate=0.1,     
+            scale=0.5,         
+            mosaic=1.0,        
+            fliplr=0.0,       
+            erasing=0.4   
+        )
 
     print(f"\nTraining abgeschlossen. Validiere {MODEL_NAME}...")
     

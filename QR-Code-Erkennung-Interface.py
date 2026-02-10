@@ -28,7 +28,7 @@ import cv2
 from ultralytics import YOLO
 
 # --- KONFIGURATION ---
-MODEL_DIRS = ["models", "models_tfl", "models_cnn"]
+MODEL_DIRS = ["models_tfl", "models_cnn"]
 IMG_SIZE = (224, 224)
 VALID_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 YOLO_QR_MODEL_PATH = os.path.join("models_yolo", "best.pt")
@@ -116,7 +116,7 @@ QFrame[frameShape="4"] { color: #444; margin-top: 15px; margin-bottom: 15px; }
 # --- WORKER THREADS ---
 # =============================================================================
 
-# 1. CNN WORKER
+# 1. CNN WORKER (ORDNER-BASIERTE GRÖSSE)
 class PredictionWorker(QThread):
     progress = Signal(int)
     finished = Signal(dict) 
@@ -128,21 +128,56 @@ class PredictionWorker(QThread):
         self.image_paths = image_paths
 
     def run(self):
+        print(f"--- Starte Modell aus Pfad: {self.model_path} ---")
         try:
+            # 1. Bildgröße anhand des Ordnernamens bestimmen
+            # Standard ist 224 (für TFL)
+            target_size = (224, 224) 
+            
+            # Prüfen, ob "models_cnn" im Pfad vorkommt (egal ob Windows \ oder Mac /)
+            if "models_cnn" in self.model_path:
+                target_size = (256, 256)
+            elif "models_tfl" in self.model_path:
+                target_size = (224, 224)
+            else:
+                print(f">> Unbekannte Auflösung, gewählt: {target_size})")
+
+            # 2. Modell laden
             model = tf.keras.models.load_model(self.model_path)
+            
             results = {}
             total = len(self.image_paths)
+            
             for i, path in enumerate(self.image_paths):
                 try:
-                    img = load_img(path, target_size=IMG_SIZE)
-                    x = img_to_array(img) / 255.0
+                    img = load_img(path, target_size=target_size)
+                    x = img_to_array(img)
+                    
+                    # Normalisierung (Standard / 255.0)
+                    x = x / 255.0
                     x = np.expand_dims(x, axis=0)
-                    score = model.predict(x, verbose=0)[0][0]
+                    
+                    # Vorhersage
+                    prediction = model.predict(x, verbose=0)
+                    
+                    # Score extrahieren
+                    if isinstance(prediction, list): prediction = prediction[0]
+                    score = float(prediction[0][0]) if np.ndim(prediction) > 1 else float(prediction[0])
+                    
                     results[path] = score
-                except Exception: pass
+                    
+                    if i == 0:
+                        print(f"Debug - Erstes Bild Score: {score:.4f}")
+
+                except Exception as e_img:
+                    print(f"Fehler bei Bild {os.path.basename(path)}: {e_img}")
+                
                 self.progress.emit(int(((i + 1) / total) * 100))
+            
             self.finished.emit(results)
+
         except Exception as e:
+            print(f"CRITICAL ERROR: {e}")
             self.error.emit(str(e))
 
 # 2. YOLO WORKER
