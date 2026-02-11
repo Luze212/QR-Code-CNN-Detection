@@ -34,6 +34,7 @@ pip install PySide6 opencv-python matplotlib ultralytics pandas seaborn
 
 # TensorFlow Basis (CPU-Optimiert für ARM64, aber ohne Metal-Plugin-Crash)
 pip install tensorflow-macos
+pip install zxing-cpp
 
 echo "========================================================"
 echo "✅ REPARATUR ABGESCHLOSSEN!"

@@ -10,6 +10,8 @@ dataset_test_yolov8/
 dataset_test_boxes/
 dataset_final_yolov8/
 dataset_final_boxes/
+dataset_small_yolov8/
+dataset_combined/
 
 # --- Models / Weights ---
 models/

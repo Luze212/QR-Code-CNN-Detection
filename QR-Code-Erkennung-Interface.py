@@ -11,9 +11,9 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QSlider, QScrollArea, QFrame, QProgressBar, QSizePolicy,
                              QListWidget, QListWidgetItem, QTextEdit)
 from PySide6.QtCore import Qt, QThread, Signal, QSize, QTimer, QLocale
-from PySide6.QtGui import QPixmap, QImage, QDoubleValidator, QIcon, QKeyEvent, QPainter, QPen, QColor, QFont
+from PySide6.QtGui import QPixmap, QImage, QDoubleValidator, QIcon, QKeyEvent, QPainter, QPen, QColor, QFont, QImageReader
 
-# --- MATPLOTLIB FÜR WINKEL-PLOT ---
+# --- MATPLOTLIB ---
 import matplotlib
 matplotlib.use('QtAgg') 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -37,86 +37,61 @@ YOLO_QR_MODEL_PATH = os.path.join("models_yolo", "best.pt")
 STYLESHEET = """
 QMainWindow { background-color: #2b2b2b; }
 QWidget { color: #ffffff; font-family: 'Segoe UI', Arial, sans-serif; font-size: 14px; }
-
-/* Sidebar Styling */
 QScrollArea { border: none; background-color: #1e1e1e; }
 QWidget#SidebarContent { background-color: #1e1e1e; }
-
-/* GEOMETRIE */
 QComboBox, QLineEdit, QPushButton { height: 30px; }
-
-/* Inputs & Buttons */
 QComboBox, QLineEdit, QTextEdit, QListWidget {
     background-color: #333; border: 1px solid #555; border-radius: 4px;
     padding-left: 5px; color: white; selection-background-color: #1f6aa5;
 }
-
-QComboBox::drop-down {
-    border: none; background: #444; width: 20px;
-    border-top-right-radius: 4px; border-bottom-right-radius: 4px;
-}
-QComboBox QAbstractItemView {
-    background-color: #333; color: white; selection-background-color: #1f6aa5;
-    outline: none; border: 1px solid #555;
-}
-
-QPushButton {
-    background-color: #3a3a3a; border: 1px solid #555; border-radius: 4px;
-    color: white; font-weight: bold;
-}
+QComboBox::drop-down { border: none; background: #444; width: 20px; border-radius: 4px; }
+QPushButton { background-color: #3a3a3a; border: 1px solid #555; border-radius: 4px; color: white; font-weight: bold; }
 QPushButton:hover { background-color: #4a4a4a; border-color: #666; }
 QPushButton:pressed { background-color: #222; }
 QPushButton:disabled { background-color: #2a2a2a; color: #555; border-color: #333; }
-
-/* Action Buttons */
-QPushButton#RunButton {
-    background-color: #1f6aa5; border: none; font-size: 15px; height: 40px;
-}
+QPushButton#RunButton { background-color: #1f6aa5; border: none; font-size: 15px; height: 40px; }
 QPushButton#RunButton:hover { background-color: #2a7bb6; }
-
-/* Sliders */
-QSlider::groove:horizontal {
-    border: 1px solid #333; height: 6px; background: #222; margin: 2px 0; border-radius: 3px;
-}
-QSlider::handle:horizontal {
-    background: #1f6aa5; border: 1px solid #1f6aa5; width: 14px; height: 14px;
-    margin: -5px 0; border-radius: 7px;
-}
-
-/* Labels */
-QLabel#ResultLabel {
-    background-color: #222; border: 2px solid #444; border-radius: 6px;
-    padding: 10px; font-weight: bold; font-size: 16px; color: #888;
-}
+QSlider::groove:horizontal { border: 1px solid #333; height: 6px; background: #222; margin: 2px 0; border-radius: 3px; }
+QSlider::handle:horizontal { background: #1f6aa5; border: 1px solid #1f6aa5; width: 14px; height: 14px; margin: -5px 0; border-radius: 7px; }
+QLabel#ResultLabel { background-color: #222; border: 2px solid #444; border-radius: 6px; padding: 10px; font-weight: bold; font-size: 16px; color: #888; }
 QLabel#ResultLabel[status="success"] { border-color: #2ea043; color: #2ea043; background-color: #1a2e1f; }
 QLabel#ResultLabel[status="fail"]    { border-color: #da3633; color: #da3633; background-color: #2e1a1a; }
-
 QListWidget::item { padding: 5px; }
 QListWidget::item:selected { background-color: #1f6aa5; color: white; }
-
-/* Image Area */
-QLabel#ImageDisplay {
-    background-color: #181818; border: 2px dashed #333; border-radius: 8px; padding: 6px; 
-}
+QLabel#ImageDisplay { background-color: #181818; border: 2px dashed #333; border-radius: 8px; padding: 6px; }
 QLabel#ImageDisplay[status="success"] { border: 4px solid #2ea043; background-color: #122215; }
 QLabel#ImageDisplay[status="fail"] { border: 4px solid #da3633; background-color: #2e1a1a; }
 QLabel#ImageDisplay[status="neutral"] { border: 2px dashed #333; background-color: #181818; }
-
-/* Plot Container (Rahmen für den Plot-Bereich) */
-QWidget#PlotContainer {
-    border: 2px dashed #444;
-    border-radius: 6px;
-    background-color: #1e1e1e;
-}
-
+QWidget#PlotContainer { border: 2px dashed #444; border-radius: 6px; background-color: #1e1e1e; }
 QFrame[frameShape="4"] { color: #444; margin-top: 15px; margin-bottom: 15px; }
 """
+
+# =============================================================================
+# --- HILFSFUNKTION FÜR KONSISTENTES LADEN ---
+# =============================================================================
+def load_aligned_image(path):
+    """
+    Lädt das Bild IMMER so, wie es das GUI anzeigt (EXIF-Rotation beachtet).
+    Gibt ein OpenCV-Bild (BGR) zurück.
+    """
+    if not os.path.exists(path): return None
+    reader = QImageReader(path)
+    reader.setAutoTransform(True) # Beachtet EXIF
+    img = reader.read()
+    if img.isNull(): return None
+    
+    # Konvertierung Qt -> OpenCV
+    img = img.convertToFormat(QImage.Format.Format_RGB888)
+    w, h = img.width(), img.height()
+    ptr = img.constBits()
+    arr = np.array(ptr).reshape(h, w, 3)
+    return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
 
 # =============================================================================
 # --- WORKER THREADS ---
 # =============================================================================
 
-# 1. CNN WORKER (ORDNER-BASIERTE GRÖSSE)
+# 1. CNN WORKER
 class PredictionWorker(QThread):
     progress = Signal(int)
     finished = Signal(dict) 
@@ -130,21 +105,11 @@ class PredictionWorker(QThread):
     def run(self):
         print(f"--- Starte Modell aus Pfad: {self.model_path} ---")
         try:
-            # 1. Bildgröße anhand des Ordnernamens bestimmen
-            # Standard ist 224 (für TFL)
             target_size = (224, 224) 
-            
-            # Prüfen, ob "models_cnn" im Pfad vorkommt (egal ob Windows \ oder Mac /)
             if "models_cnn" in self.model_path:
                 target_size = (256, 256)
-            elif "models_tfl" in self.model_path:
-                target_size = (224, 224)
-            else:
-                print(f">> Unbekannte Auflösung, gewählt: {target_size})")
-
-            # 2. Modell laden
-            model = tf.keras.models.load_model(self.model_path)
             
+            model = tf.keras.models.load_model(self.model_path)
             results = {}
             total = len(self.image_paths)
             
@@ -152,38 +117,23 @@ class PredictionWorker(QThread):
                 try:
                     img = load_img(path, target_size=target_size)
                     x = img_to_array(img)
-                    
-                    # Normalisierung (Standard / 255.0)
                     x = x / 255.0
                     x = np.expand_dims(x, axis=0)
-                    
-                    # Vorhersage
                     prediction = model.predict(x, verbose=0)
-                    
-                    # Score extrahieren
                     if isinstance(prediction, list): prediction = prediction[0]
                     score = float(prediction[0][0]) if np.ndim(prediction) > 1 else float(prediction[0])
-                    
                     results[path] = score
-                    
-                    if i == 0:
-                        print(f"Debug - Erstes Bild Score: {score:.4f}")
-
                 except Exception as e_img:
                     print(f"Fehler bei Bild {os.path.basename(path)}: {e_img}")
-                
                 self.progress.emit(int(((i + 1) / total) * 100))
-            
             self.finished.emit(results)
-
         except Exception as e:
-            print(f"CRITICAL ERROR: {e}")
             self.error.emit(str(e))
 
-# 2. YOLO WORKER
+# 2. YOLO WORKER (NUTZT load_aligned_image)
 class YoloWorker(QThread):
     progress = Signal(int)
-    finished = Signal(list)
+    finished = Signal(list) 
     error = Signal(str)
 
     def __init__(self, image_path):
@@ -191,87 +141,92 @@ class YoloWorker(QThread):
         self.image_path = image_path
 
     def run(self):
-        # ==============================================================================
-        # --- SCHNITTSTELLE / INTERFACE BESCHREIBUNG FÜR BACKEND-ENTWICKLER ---
-        # ==============================================================================
-        # ZIEL:
-        # Dieses Modul soll auf dem Bild (self.image_path) QR-Codes erkennen und deren
-        # Position als Bounding Boxen zurückgeben.
-        #
-        # INPUT:
-        # self.image_path (str): Absoluter Pfad zur Bilddatei.
-        #
-        # AUFGABEN:
-        # 1. Bild laden.
-        # 2. Objekterkennungsmodell (z.B. YOLOv8) laden und anwenden.
-        # 3. Filtern nach Klasse 'QR-Code' (falls Modell mehrere Klassen kann).
-        #
-        # OUTPUT (Rückgabeformat):
-        # Eine Liste von Dictionaries. Jedes Dictionary repräsentiert einen erkannten QR-Code.
-        # Format:
-        # [
-        #   {
-        #     'id': 1,           # Eindeutige ID für diesen Durchlauf (int)
-        #     'x': 100,          # X-Koordinate obere linke Ecke (Pixel)
-        #     'y': 50,           # Y-Koordinate obere linke Ecke (Pixel)
-        #     'w': 200,          # Breite der Box (Pixel)
-        #     'h': 200,          # Höhe der Box (Pixel)
-        #     'confidence': 0.95 # Wahrscheinlichkeit (0.0 bis 1.0)
-        #   },
-        #   ... weitere Boxen ...
-        # ]
-        # ==============================================================================
         try:
-            import os
+            abs_model_path = os.path.abspath(YOLO_QR_MODEL_PATH)
+            if not os.path.exists(abs_model_path):
+                if os.path.exists("best.pt"): abs_model_path = os.path.abspath("best.pt")
+            
+            if not os.path.exists(abs_model_path):
+                self.finished.emit([])
+                return
 
-            print("=== YOLO DEBUG START ===")
-            print("MODEL PATH:", YOLO_QR_MODEL_PATH, "exists:", os.path.exists(YOLO_QR_MODEL_PATH))
-            print("IMAGE PATH:", self.image_path, "exists:", os.path.exists(self.image_path))
+            model = YOLO(abs_model_path)
+            
+            # KONSISTENTES LADEN (Gedreht wie GUI)
+            img = load_aligned_image(self.image_path)
+            if img is None: raise ValueError("Bildfehler")
 
-            model = YOLO(YOLO_QR_MODEL_PATH)
-            print("MODEL NAMES:", model.names)
-
-            # WICHTIG: so wie CLI testen: niedriger conf + größere imgsz
-            res = model.predict(
-                source=self.image_path,
-                imgsz=960,
-                conf=0.10,
-                iou=0.45,
-                max_det=20,
-                verbose=True
-            )[0]
-
-            print("RAW boxes:", len(res.boxes))
+            # --- TILING LOGIK ---
+            detections_full = self.scan_full(model, img)
+            detections_tiling = self.scan_tiling(model, img)
+            all_detections = detections_full + detections_tiling
+            final_boxes = self.simple_nms(all_detections, iou_thresh=0.45)
 
             boxes_out = []
-            for i, b in enumerate(res.boxes):
-                x1, y1, x2, y2 = b.xyxy[0].tolist()
-                x1, y1, x2, y2 = map(int, [x1, y1, x2, y2])
-
+            for i, det in enumerate(final_boxes):
+                x1, y1, x2, y2, conf, cls = det
                 boxes_out.append({
                     "id": i + 1,
-                    "x": x1,
-                    "y": y1,
-                    "w": max(1, x2 - x1),
-                    "h": max(1, y2 - y1),
-                    "confidence": float(b.conf[0].item()) if b.conf is not None else 0.0
+                    "x": int(x1), "y": int(y1), "w": int(x2 - x1), "h": int(y2 - y1),
+                    "confidence": float(conf)
                 })
-
-            print("OUT boxes:", len(boxes_out))
-            if boxes_out:
-                print("BOX[0]:", boxes_out[0])
-            print("=== YOLO DEBUG END ===")
 
             self.finished.emit(boxes_out)
 
         except Exception as e:
-            # falls deine Klasse error signal hat:
-            # self.error.emit(str(e))
             print("YOLO ERROR:", e)
             self.finished.emit([])
 
+    def scan_full(self, model, img, imgsz=1280, conf=0.15):
+        results = model.predict(img, imgsz=imgsz, conf=conf, verbose=False)
+        detections = []
+        if len(results[0].boxes) > 0:
+            for box in results[0].boxes:
+                coords = box.xyxy[0].cpu().numpy()
+                conf_val = float(box.conf[0].cpu().numpy())
+                cls_val = int(box.cls[0].cpu().numpy())
+                detections.append([coords[0], coords[1], coords[2], coords[3], conf_val, cls_val])
+        return detections
 
-# 3. READER WORKER
+    def scan_tiling(self, model, img, imgsz=1280, conf=0.15, overlap_ratio=0.25):
+        h_img, w_img = img.shape[:2]
+        tile_w = int(w_img * (0.5 + overlap_ratio/2))
+        tile_h = int(h_img * (0.5 + overlap_ratio/2))
+        positions = [(0, 0), (w_img - tile_w, 0), (0, h_img - tile_h), (w_img - tile_w, h_img - tile_h)]
+        detections = []
+        for x_off, y_off in positions:
+            crop = img[y_off : y_off+tile_h, x_off : x_off+tile_w]
+            results = model.predict(crop, imgsz=imgsz, conf=conf, verbose=False)
+            if len(results[0].boxes) > 0:
+                for box in results[0].boxes:
+                    local = box.xyxy[0].cpu().numpy()
+                    gx1, gy1 = local[0] + x_off, local[1] + y_off
+                    gx2, gy2 = local[2] + x_off, local[3] + y_off
+                    conf_val = float(box.conf[0].cpu().numpy())
+                    cls_val = int(box.cls[0].cpu().numpy())
+                    detections.append([gx1, gy1, gx2, gy2, conf_val, cls_val])
+        return detections
+
+    def simple_nms(self, detections, iou_thresh=0.45):
+        if not detections: return []
+        detections = sorted(detections, key=lambda x: x[4], reverse=True)
+        keep = []
+        while detections:
+            best = detections.pop(0)
+            keep.append(best)
+            detections = [x for x in detections if self.compute_iou(best, x) < iou_thresh]
+        return keep
+
+    def compute_iou(self, box1, box2):
+        x1 = max(box1[0], box2[0]); y1 = max(box1[1], box2[1])
+        x2 = min(box1[2], box2[2]); y2 = min(box1[3], box2[3])
+        inter = max(0, x2 - x1) * max(0, y2 - y1)
+        b1 = (box1[2]-box1[0])*(box1[3]-box1[1])
+        b2 = (box2[2]-box2[0])*(box2[3]-box2[1])
+        return inter / (b1 + b2 - inter + 1e-6)
+
+
+# 3. READER WORKER (NUTZT load_aligned_image)
 class ReaderWorker(QThread):
     finished = Signal(list)
     error = Signal(str)
@@ -282,266 +237,86 @@ class ReaderWorker(QThread):
         self.boxes = boxes
 
     def run(self):
-        # ==============================================================================
-        # --- SCHNITTSTELLE / INTERFACE BESCHREIBUNG FÜR BACKEND-ENTWICKLER ---
-        # ==============================================================================
-        # ZIEL:
-        # Für jede gefundene Box (aus YOLO) soll der Inhalt des QR-Codes ausgelesen werden.
-        # Es sollen mehrere Bibliotheken (Reader) getestet werden.
-        #
-        # INPUT:
-        # self.image_path (str): Pfad zum Originalbild.
-        # self.boxes (list): Die Liste der Boxen, die der YoloWorker zurückgegeben hat.
-        #
-        # AUFGABEN:
-        # 1. Originalbild laden.
-        # 2. Für jede Box in self.boxes:
-        #    a. Den Bereich (ROI) basierend auf x,y,w,h ausschneiden.
-        #    b. Diesen Ausschnitt an verschiedene Reader übergeben (z.B. Pyzbar, OpenCV, ZXing).
-        #
-        # OUTPUT (Rückgabeformat):
-        # Eine flache Liste von Ergebnissen pro Reader und pro Code.
-        # Format:
-        # [
-        #   {'reader': 'Pyzbar', 'code_id': 1, 'success': True, 'content': 'http://google.com'},
-        #   {'reader': 'OpenCV', 'code_id': 1, 'success': False, 'content': ''},
-        #   {'reader': 'Pyzbar', 'code_id': 2, 'success': True, 'content': 'Text-123'},
-        #   ...
-        # ]
-        # ==============================================================================
         try:
-            results = []  # IMMER neu, damit pro Klick nicht kumuliert
-
-            def _clip_int(v, lo, hi):
-                try:
-                    v = int(round(float(v)))
-                except Exception:
-                    v = int(lo)
-                return max(int(lo), min(v, int(hi)))
-
-            def _preprocess_variants(roi_bgr):
-                """Erzeugt mehrere robuste Varianten des ROI für besseres Decoding."""
-                gray = cv2.cvtColor(roi_bgr, cv2.COLOR_BGR2GRAY)
-
-                # Entrauschen
-                den = cv2.fastNlMeansDenoising(gray, None, h=10, templateWindowSize=7, searchWindowSize=21)
-
-                # Kontrast (CLAHE)
-                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-                eq = clahe.apply(den)
-
-                # Threshold-Varianten
-                thr_adapt = cv2.adaptiveThreshold(
-                    eq, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 31, 2
-                )
-                _, thr_otsu = cv2.threshold(eq, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-                # leichtes Schärfen
-                kernel = np.array(
-                    [[0, -1, 0],
-                    [-1, 5, -1],
-                    [0, -1, 0]],
-                    dtype=np.float32
-                )
-                sharp = cv2.filter2D(eq, -1, kernel)
-
-                return [roi_bgr, eq, thr_adapt, thr_otsu, sharp]
-
-            def _decode_opencv(img_variant):
+            results = []
+            def _clip_int(v, lo, hi): return max(int(lo), min(int(round(v)), int(hi)))
+            def _decode_opencv(img):
                 qrd = cv2.QRCodeDetector()
-                data, points, _ = qrd.detectAndDecode(img_variant)
-                if data is None:
-                    data = ""
-                data = data.strip()
-                return (len(data) > 0), data
+                d, _, _ = qrd.detectAndDecode(img)
+                return (True, d.strip()) if d else (False, "")
+            
+            try: import zxingcpp; _zxing_ok = True
+            except: zxingcpp = None; _zxing_ok = False
 
-            # Optional: ZXing-cpp nur wenn installiert
-            try:
-                import zxingcpp
-                _zxing_ok = True
-            except Exception:
-                zxingcpp = None
-                _zxing_ok = False
-            print("ZXING AVAILABLE:", _zxing_ok)
+            def _decode_zxing(img):
+                if not _zxing_ok: return False, ""
+                try: b = zxingcpp.read_barcodes(img)
+                except: b = zxingcpp.read_barcodes(np.ascontiguousarray(img))
+                return (True, b[0].text.strip()) if b else (False, "")
 
-            def _decode_zxing(img_variant):
-                if not _zxing_ok:
-                    return False, ""
-
-                try:
-                    barcodes = zxingcpp.read_barcodes(img_variant)
-                except Exception:
-                    barcodes = zxingcpp.read_barcodes(np.ascontiguousarray(img_variant))
-
-                if not barcodes:
-                    return False, ""
-
-                content = (barcodes[0].text or "").strip()
-                return (len(content) > 0), content
-
-
-            image = cv2.imread(self.image_path)
-            if image is None:
-                raise RuntimeError(f"Bild konnte nicht geladen werden: {self.image_path}")
-
+            # KONSISTENTES LADEN
+            image = load_aligned_image(self.image_path)
+            if image is None: raise RuntimeError("Bildfehler")
             H, W = image.shape[:2]
 
             for box in self.boxes:
-                code_id = int(box.get("id", 0))
-
-                x = _clip_int(box.get("x", 0), 0, W - 1)
-                y = _clip_int(box.get("y", 0), 0, H - 1)
-                w = _clip_int(box.get("w", 1), 1, W)
-                h = _clip_int(box.get("h", 1), 1, H)
-
-                # Padding, falls Box knapp ist
+                cid = box.get("id", 0)
+                x, y = _clip_int(box.get("x",0), 0, W-1), _clip_int(box.get("y",0), 0, H-1)
+                w, h = _clip_int(box.get("w",1), 1, W), _clip_int(box.get("h",1), 1, H)
                 pad = int(0.08 * max(w, h))
-                x0 = _clip_int(x - pad, 0, W - 1)
-                y0 = _clip_int(y - pad, 0, H - 1)
-                x1 = _clip_int(x + w + pad, 0, W)
-                y1 = _clip_int(y + h + pad, 0, H)
+                x0, y0 = max(0, x-pad), max(0, y-pad)
+                x1, y1 = min(W, x+w+pad), min(H, y+h+pad)
 
-                # ROI ungültig -> trotzdem 2 Einträge (OpenCV + Pyzbar)
-                if x1 <= x0 or y1 <= y0:
-                    results.append({"reader": "OpenCV", "code_id": code_id, "success": False, "content": ""})
-                    results.append({"reader": "ZXing", "code_id": code_id, "success": False, "content": ""})
+                if x1<=x0 or y1<=y0: 
+                    results.append({"reader":"OpenCV", "code_id":cid, "success":False, "content":""})
                     continue
 
-                roi = image[y0:y1, x0:x1].copy()
-                variants = _preprocess_variants(roi)
-
-                # --- OpenCV: über Varianten probieren ---
-                ok_cv, content_cv = False, ""
-                for v in variants:
-                    ok_cv, content_cv = _decode_opencv(v)
-                    if ok_cv:
-                        break
-                results.append({"reader": "OpenCV", "code_id": code_id, "success": ok_cv, "content": content_cv})
-
-                # --- ZXing: immer 1 Eintrag pro Code, auch wenn nicht verfügbar ---
+                roi = image[y0:y1, x0:x1]
+                
+                # 1. OpenCV
+                ok, txt = _decode_opencv(roi)
+                results.append({"reader":"OpenCV", "code_id":cid, "success":ok, "content":txt})
+                # 2. ZXing
                 if _zxing_ok:
-                    ok_zx, content_zx = False, ""
-                    for v in variants:
-                        ok_zx, content_zx = _decode_zxing(v)
-                        if ok_zx:
-                            break
-                    results.append({"reader": "ZXing", "code_id": code_id, "success": ok_zx, "content": content_zx})
+                    okz, txtz = _decode_zxing(roi)
+                    results.append({"reader":"ZXing", "code_id":cid, "success":okz, "content":txtz})
                 else:
-                    results.append({"reader": "ZXing", "code_id": code_id, "success": False, "content": ""})
+                    results.append({"reader":"ZXing", "code_id":cid, "success":False, "content":""})
 
             self.finished.emit(results)
-
-        except Exception as e:
-            self.error.emit(str(e))
+        except Exception as e: self.error.emit(str(e))
 
 
-# 4. ANGLE WORKER
+# 4. ANGLE WORKER (NUTZT load_aligned_image)
 class AngleWorker(QThread):
     finished = Signal(dict)
     error = Signal(str)
 
     def __init__(self, image_path, box_id, boxes, fov_x_deg=70.0):
         super().__init__()
-        self.image_path = image_path
-        self.target_id = box_id
-        self.boxes = boxes
-        self.fov_x_deg = float(fov_x_deg)
+        self.image_path = image_path; self.target_id = box_id; self.boxes = boxes; self.fov_x_deg = fov_x_deg
 
     def run(self):
-        # ==============================================================================
-        # --- SCHNITTSTELLE / INTERFACE BESCHREIBUNG FÜR BACKEND-ENTWICKLER ---
-        # ==============================================================================
-        # ZIEL:
-        # Berechnung der räumlichen Orientierung (Winkel) des ausgewählten QR-Codes zur Kamera.
-        #
-        # INPUT:
-        # self.image_path (str): Pfad zum Bild.
-        # self.target_id (int): Die ID des QR-Codes, der analysiert werden soll (vom User gewählt).
-        # self.boxes (list): Liste aller Boxen, um die Koordinaten der Ziel-ID zu finden.
-        #
-        # AUFGABEN:
-        # 1. Box mit id == self.target_id heraussuchen.
-        # 2. Bildausschnitt analysieren (z.B. Identifikation der 3 Finder-Pattern Ecken).
-        # 3. PnP (Perspective-n-Point) Algorithmus oder ähnliches anwenden, um die Lage im Raum zu bestimmen.
-        # 4. Normalenvektor der QR-Code-Ebene berechnen.
-        #
-        # OUTPUT (Rückgabeformat):
-        # Ein Dictionary mit Vektoren für die 3D-Visualisierung.
-        # Format:
-        # {
-        #   'normal_vec': [x, y, z],  # Der Vektor, der senkrecht aus dem QR-Code zeigt (Länge egal, wird normiert)
-        #   'view_vec': [0, 0, 1],    # Der Vektor der Kamera (meist Z-Achse)
-        #   'angle_deg': 45.5         # Der berechnete Winkel zwischen Normale und Kameraachse in Grad
-        # }
-        # ==============================================================================
         try:
-            image = cv2.imread(self.image_path)
-            if image is None:
-                raise RuntimeError("Bild nicht ladbar")
-
+            # KONSISTENTES LADEN
+            image = load_aligned_image(self.image_path)
+            if image is None: raise RuntimeError("Bildfehler")
             H, W = image.shape[:2]
-
-            # Zielbox finden
-            target = None
-            for b in self.boxes:
-                if int(b.get("id", -1)) == int(self.target_id):
-                    target = b
-                    break
-            if target is None:
-                raise RuntimeError(f"Box ID {self.target_id} nicht gefunden")
-
+            target = next((b for b in self.boxes if int(b.get("id", -1)) == int(self.target_id)), None)
+            if not target: raise RuntimeError("ID nicht gefunden")
+            
             x, y, w, h = float(target["x"]), float(target["y"]), float(target["w"]), float(target["h"])
-
-            # Box-Mitte und Bildmitte
-            cx = x + w / 2.0
-            cy = y + h / 2.0
-            ix = W / 2.0
-            iy = H / 2.0
-
-            # FOV_y aus Aspect Ratio ableiten (Kamera-KS)
+            cx, cy = x + w/2.0, y + h/2.0
+            
             fov_x = math.radians(self.fov_x_deg)
-            fov_y = 2.0 * math.atan(math.tan(fov_x / 2.0) * (H / W))
-
-            # normierte Offsets (rechts/unten positiv)
-            dx = (cx - ix) / W
-            dy = (cy - iy) / H
-
-            # Yaw/Pitch Empfehlung (Grad)
-            yaw_deg = math.degrees(dx * fov_x)
-            pitch_deg = math.degrees(-dy * fov_y)
-
-            # Empfohlener Blickvektor aus yaw/pitch (Kamera-KS, Basisblick +Z)
-            yaw = math.radians(yaw_deg)
-            pitch = math.radians(pitch_deg)
-
-            # Rotation: erst yaw um Y, dann pitch um X auf Basisvektor [0,0,1]
-            # Ergebnis:
-            # x = sin(yaw)*cos(pitch)
-            # y = -sin(pitch)
-            # z = cos(yaw)*cos(pitch)
-            rec = np.array([
-                math.sin(yaw) * math.cos(pitch),
-                -math.sin(pitch),
-                math.cos(yaw) * math.cos(pitch)
-            ], dtype=float)
-
-            rec = rec / (np.linalg.norm(rec) + 1e-9)
-
-            result = {
-                "yaw_deg": float(yaw_deg),
-                "pitch_deg": float(pitch_deg),
-                "view_vec": [0.0, 0.0, 1.0],
-                "rec_vec": rec.tolist(),
-                "bbox_center": [float(cx), float(cy)],
-                "img_size": [int(W), int(H)],
-                "fov_x_deg": float(self.fov_x_deg),
-                "fov_y_deg": float(math.degrees(fov_y)),
-            }
-            self.finished.emit(result)
-
-        except Exception as e:
-            self.error.emit(str(e))
-
+            fov_y = 2.0 * math.atan(math.tan(fov_x/2.0)*(H/W))
+            yaw = math.radians(math.degrees(((cx - W/2)/W) * fov_x))
+            pitch = math.radians(math.degrees(-((cy - H/2)/H) * fov_y))
+            rec = np.array([math.sin(yaw)*math.cos(pitch), -math.sin(pitch), math.cos(yaw)*math.cos(pitch)])
+            rec = rec / (np.linalg.norm(rec)+1e-9)
+            
+            self.finished.emit({"yaw_deg":math.degrees(yaw), "pitch_deg":math.degrees(pitch), "view_vec":[0,0,1], "rec_vec":rec.tolist()})
+        except Exception as e: self.error.emit(str(e))
 
 
 # =============================================================================
@@ -839,8 +614,13 @@ class MainWindow(QMainWindow):
         self.btn_prev.setEnabled(self.current_index > 0)
         self.btn_next.setEnabled(self.current_index < len(self.image_paths) - 1)
 
-        base_pixmap = QPixmap(path)
-        if base_pixmap.isNull(): return
+        # WICHTIG: GUI lädt über Qt (EXIF-korrigiert, also hochkant)
+        reader = QImageReader(path)
+        reader.setAutoTransform(True)
+        img = reader.read()
+        if img.isNull(): return
+        base_pixmap = QPixmap.fromImage(img)
+        
         avail_size = self.lbl_image.size() - QSize(12, 12)
         scaled_pixmap = base_pixmap.scaled(avail_size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
 

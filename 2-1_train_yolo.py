@@ -3,93 +3,84 @@ import os
 import yaml
 
 # ================= KONFIGURATION =================
-# Pfad zum Dataset-Ordner (relativ zum Skript oder absolut)
-DATASET_DIR = os.path.abspath('dataset_final_yolov8')
+DATASET_DIR = os.path.abspath('dataset_small_yolov8')
 DATA_YAML_PATH = os.path.join(DATASET_DIR, 'data.yaml')
 
-PROJECT_NAME = 'QR_Code_Training'
-EPOCHS = 50
-IMG_SIZE = 640
-BATCH_SIZE = 16
-WORKERS = 1  # Wichtig für Apple Silicon (M1/M2/M3) um Abstürze zu vermeiden
+PROJECT_NAME = 'QR_Code_1280s'
+EPOCHS = 80 # Etwas mehr Epochen, da wir stark augmentieren
+IMG_SIZE = 1280 # DAS ist der Schlüssel für QR-Codes!
 
-# Modell-Wahl: 'yolov8n.pt' (schnell) oder 'yolov8m.pt' (genauer)
-MODEL_NAME = "yolov8m.pt" 
+# Hardware M4 (24GB+):
+BATCH_SIZE = 8 
+WORKERS = 4  # Der M4 packt locker 4 Worker für Dataloading
+MODEL_NAME = "yolov8s.pt" 
 # =================================================
 
 def check_and_fix_yaml():
-    """
-    Überprüft die data.yaml und korrigiert die Pfade auf absolute Pfade,
-    damit YOLO die Bilder garantiert findet.
-    """
     if not os.path.exists(DATA_YAML_PATH):
-        print(f"FEHLER: '{DATA_YAML_PATH}' nicht gefunden! Bitte Pfad prüfen.")
         return False
-
-    print(f"Prüfe Konfiguration in: {DATA_YAML_PATH}")
-    
     with open(DATA_YAML_PATH, 'r') as f:
         data = yaml.safe_load(f)
-
-    # Korrektur der Pfade: Roboflow nutzt oft '../train', wir setzen absolute Pfade
-    # Annahme: Die Ordner 'train', 'valid', 'test' liegen direkt im DATASET_DIR
     data['train'] = os.path.join(DATASET_DIR, 'train', 'images')
     data['val']   = os.path.join(DATASET_DIR, 'valid', 'images')
     data['test']  = os.path.join(DATASET_DIR, 'test', 'images')
-    
-    # Sicherstellen, dass die Klassennamen stimmen
     data['nc'] = 1
     data['names'] = ['QR-Code']
-
-    # Speichern der korrigierten YAML
     with open(DATA_YAML_PATH, 'w') as f:
         yaml.dump(data, f)
-        
-    print(" -> Pfade in data.yaml wurden auf absolute Pfade korrigiert.")
-    print(f" -> Klasse gesetzt auf: {data['names']}")
     return True
 
 def run_training():
-    # 1. YAML fixen vor dem Training
     if not check_and_fix_yaml():
         return
 
-    print(f"\nStarte Training mit {MODEL_NAME} auf Apple Silicon (MPS)...")
+    print(f"\nStarte High-Res Training auf M4 mit {MODEL_NAME}...")
 
-    # 2. Modell laden (Pretrained COCO weights)
     model = YOLO(MODEL_NAME)
 
-    # 3. Training starten
-    # YOLO erkennt automatisch 'nc: 1' aus der YAML und tauscht den Head aus.
     results = model.train(
             data=DATA_YAML_PATH,
-            epochs=30,            # Weniger gegen Overfitting
+            epochs=EPOCHS, 
             imgsz=IMG_SIZE,
             batch=BATCH_SIZE,
             workers=WORKERS,      
             project=PROJECT_NAME,
-            name=f"train_ROBUST_{MODEL_NAME.split('.')[0]}", # Neuer Name
+            name="train_M4_HighRes_SmartAug", # Neuer Name
             plots=True,
             exist_ok=True,
             device='mps',        
             amp=True,             
             single_cls=True,
             
-            # --- NEU: Gegen Overfitting (Augmentation) ---
-            degrees=15.0,      
-            translate=0.1,     
-            scale=0.5,         
-            mosaic=1.0,        
-            fliplr=0.0,       
-            erasing=0.4   
+            # --- Strategie: Lücken füllen, nicht zerstören ---
+            
+            # 1. Geometrie (Die Lückenfüller)
+            degrees=45.0,       # Rotation ist OK! QR Codes liegen oft krumm.
+            translate=0.1,      # Verschieben ist sicher.
+            scale=0.5,          # WICHTIG: Simuliert Distanz (Zoom). Sicher.
+            
+            # VORSICHTIG ANGEPASST:
+            shear=1.0,          # Reduziert von 2.5 auf 1.0 (Quadrate bleiben Quadrate)
+            perspective=0.0005, # Reduziert von 0.001 (Nur leichte 3D-Kippung)
+            
+            # 2. Struktur (Gefahrenzone)
+            mosaic=0.5,         # Wahrscheinlichkeit auf 50% gesenkt. 
+                                # Das heißt: Jedes 2. Bild ist ein "ganzes" Bild.
+            mixup=0.0,          # AUSGESCHALTET. QR Codes sollen nicht transparent sein.
+            copy_paste=0.0,     # Aus.
+            
+            # Am Ende wieder Mosaic aus, für Fokus auf Full-Size Bilder
+            close_mosaic=10,    
+
+            # 3. Licht & Farbe (Simuliert schlechte Kameras)
+            hsv_h=0.015,        # Farbe nur minimal ändern
+            hsv_s=0.5,          # Sättigung (Graue vs bunte Umgebungen)
+            hsv_v=0.4,          # Helligkeit (Dunkle Lagerhalle vs Büro)
         )
 
-    print(f"\nTraining abgeschlossen. Validiere {MODEL_NAME}...")
-    
-    # 4. Validierung
-    metrics = model.val()
-    print(f"mAP50: {metrics.box.map50}")
-    print(f"mAP50-95: {metrics.box.map}")
+    print(f"\nTraining fertig.")
+    # Validierung
+    model.val(imgsz=IMG_SIZE)
 
 if __name__ == '__main__':
     run_training()
