@@ -35,8 +35,8 @@ INPUT_SHAPE = IMG_SIZE + (3,)
 CONFIGS = {
     "VGG16": {
         'warmup_epochs': 10, 
-        'warmup_lr': 0.0001, 
-        'warmup_opt': 'adam',
+        'warmup_lr': 0.001, 
+        'warmup_opt': 'rmsprop',
         'finetune_epochs': 25, 
         'finetune_lr': 1e-04,       # final
         'unfreeze_layers': 8,       # vorher 12    max 19
